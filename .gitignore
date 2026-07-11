@@ -1,0 +1,65 @@
+# ============================
+# Environnement / secrets
+# ============================
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ============================
+# Node / Next.js (apps/frontend)
+# ============================
+node_modules/
+.next/
+out/
+.turbo/
+next-env.d.ts
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ============================
+# Python / FastAPI (apps/backend)
+# ============================
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Alembic : garder les scripts de migration, ignorer seulement les caches
+apps/backend/alembic/__pycache__/
+
+# ============================
+# Docker
+# ============================
+*.log
+docker-compose.override.yml
+
+# ============================
+# IDE / éditeurs
+# ============================
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# ============================
+# OS
+# ============================
+.DS_Store
+Thumbs.db
+
+# ============================
+# Divers
+# ============================
+*.tmp
+*.bak

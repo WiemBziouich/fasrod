@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --color-bg: #0d0d0c;
+  --color-surface: #1a1a18;
+  --color-surface-2: #242422;
+  --color-border: #2a2a28;
+  --color-text: #f2f0e8;
+  --color-text-muted: #7a7972;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-bg font-body text-text antialiased;
+  background-image: linear-gradient(180deg, #0d0d0c 0%, #0f0f0e 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(242, 240, 232, 0.18);
+  color: #f2f0e8;
+}
