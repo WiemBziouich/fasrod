@@ -146,9 +146,8 @@ export default function HomePage() {
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="mt-5 overflow-hidden rounded-[34px] border border-white/10 bg-[#11111a] shadow-glow"
-      >
-        <div className="relative aspect-[4/5] bg-gradient-to-br from-[#ff5c38] via-[#1e1e2b] to-[#0d0d12] p-5 sm:aspect-[16/10]">
+        className="mt-5 overflow-hidden rounded-[34px] border border-white/10 bg-surface shadow-glow"      >
+        <div className="relative aspect-[4/5] bg-surface p-5 sm:aspect-[16/10]">
           <div className="flex h-full flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="rounded-full bg-black/30 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-white/90">
@@ -252,7 +251,7 @@ export default function HomePage() {
                   transition={{ duration: 0.2 }}
                   className="overflow-hidden rounded-[30px] border border-white/10 bg-white/5 shadow-glow"
                 >
-                  <div className={`aspect-[4/5] bg-gradient-to-br ${feedCards[index % feedCards.length].gradient} p-4`}>
+                  <div className={`aspect-[4/5] ${feedCards[index % feedCards.length].gradient} p-4`}>
                     <div className="flex h-full flex-col justify-between rounded-[24px] border border-white/15 bg-black/20 p-4 backdrop-blur-sm">
                       <span className="w-fit rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-white/90">
                         {product.collections[0]?.nom ?? "Featured"}
@@ -275,7 +274,7 @@ export default function HomePage() {
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden rounded-[30px] border border-white/10 bg-white/5 shadow-glow"
               >
-                <div className={`aspect-[4/5] bg-gradient-to-br ${card.gradient} p-4`}>
+                <div className={`aspect-[4/5] ${card.gradient} p-4`}>
                   <div className="flex h-full flex-col justify-between rounded-[24px] border border-white/15 bg-black/20 p-4 backdrop-blur-sm">
                     <span className="w-fit rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-white/90">
                       {card.label}

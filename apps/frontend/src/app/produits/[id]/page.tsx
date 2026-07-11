@@ -26,7 +26,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
           </div>
 
           <section className="mt-5 grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
-            <div className="overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-[#ff5c38] via-[#1e1e2b] to-[#0d0d12] p-5">
+            <div className="overflow-hidden rounded-[28px] border border-white/10 bg-surface p-5">
               <div className="flex min-h-[420px] flex-col justify-between rounded-[24px] border border-white/15 bg-black/20 p-5 backdrop-blur-sm">
                 <div className="flex items-center justify-between gap-3">
                   <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-white/90">
