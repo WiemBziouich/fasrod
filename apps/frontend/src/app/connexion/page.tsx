@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { login } from "@/lib/api";
@@ -14,6 +14,7 @@ export default function ConnexionPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     if (!isLoading && client) {
@@ -23,6 +24,11 @@ export default function ConnexionPage() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submittingRef.current) {
+      return;
+    }
+
+    submittingRef.current = true;
     setError(null);
     setIsSubmitting(true);
 
@@ -33,6 +39,7 @@ export default function ConnexionPage() {
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Connexion impossible");
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   }

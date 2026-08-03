@@ -27,6 +27,7 @@ class Settings:
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
     backend_cors_origins: str = "http://localhost:3001"
+    backend_cors_origin_regex: str = r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}):3001$"
 
     @property
     def is_production(self) -> bool:
@@ -48,6 +49,11 @@ def get_settings() -> Settings:
         access_token_expire_minutes=_get_int_env("ACCESS_TOKEN_EXPIRE_MINUTES", 15),
         refresh_token_expire_days=_get_int_env("REFRESH_TOKEN_EXPIRE_DAYS", 7),
         backend_cors_origins=_get_env("BACKEND_CORS_ORIGINS", "http://localhost:3001") or "http://localhost:3001",
+        backend_cors_origin_regex=_get_env(
+            "BACKEND_CORS_ORIGIN_REGEX",
+            r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}):3001$",
+        )
+        or r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}):3001$",
     )
 
 

@@ -20,7 +20,7 @@ def _set_refresh_cookie(response: Response, refresh_token: str, max_age: int) ->
         key="fasrord_refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=True,
+        secure=settings.is_production,
         samesite="strict",
         max_age=max_age,
         path="/api/v1/auth",

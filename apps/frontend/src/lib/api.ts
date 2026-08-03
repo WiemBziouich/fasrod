@@ -117,7 +117,30 @@ export class ApiError extends Error {
   }
 }
 
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
+export function resolveApiBaseUrl() {
+  const configuredBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+  if (typeof window === "undefined") {
+    return configuredBaseUrl ?? "http://localhost:8000/api/v1";
+  }
+
+  if (!configuredBaseUrl) {
+    return `${window.location.protocol}//${window.location.hostname}:8000/api/v1`;
+  }
+
+  try {
+    const configuredHost = new URL(configuredBaseUrl).hostname;
+    if (configuredHost === "localhost" || configuredHost === "127.0.0.1") {
+      return `${window.location.protocol}//${window.location.hostname}:8000/api/v1`;
+    }
+  } catch {
+    // Keep the configured URL if it cannot be parsed.
+  }
+
+  return configuredBaseUrl;
+}
+
+const baseUrl = resolveApiBaseUrl();
 
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(`${baseUrl}${path}`, {
