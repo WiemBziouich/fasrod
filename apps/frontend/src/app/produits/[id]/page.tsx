@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { FavoriteToggleButton } from "@/components/favorite-toggle-button";
 import { fetchProductById } from "@/lib/api";
 import { ProductPurchaseBox } from "./product-purchase-box";
 
@@ -24,6 +25,10 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
               Back
             </Link>
             <span className="text-xs uppercase tracking-[0.3em] text-sand">Product detail</span>
+            <FavoriteToggleButton
+              productId={product.id}
+              className="rounded-full border border-border bg-surface-2 px-3 py-2 text-sm font-semibold text-text"
+            />
           </div>
 
           <section className="mt-5 grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">

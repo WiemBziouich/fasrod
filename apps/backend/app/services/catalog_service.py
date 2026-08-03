@@ -1,13 +1,14 @@
 from datetime import date
 from uuid import UUID
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.categorie import Categorie
 from app.models.collection import Collection
 from app.models.produit import Produit
 from app.models.promotion import Promotion
+from app.models.variante import Variante
 from app.schemas.catalog import CollectionRead, PaginatedProduitListRead, ProduitDetailRead, ProduitListItemRead, PromotionRead
 
 
@@ -34,6 +35,11 @@ class CatalogService:
         self,
         skip: int = 0,
         limit: int = 20,
+        search: str | None = None,
+        price_min: int | None = None,
+        price_max: int | None = None,
+        taille: str | None = None,
+        couleur: str | None = None,
         collection_id: UUID | None = None,
         categorie_id: UUID | None = None,
     ) -> PaginatedProduitListRead:
@@ -53,6 +59,34 @@ class CatalogService:
 
         if categorie_id is not None:
             statement = statement.where(Produit.categorie_id == categorie_id)
+
+        if search:
+            search_term = f"%{search.strip()}%"
+            statement = statement.where(
+                or_(
+                    Produit.nom.ilike(search_term),
+                    Produit.collections.any(
+                        or_(
+                            Collection.nom.ilike(search_term),
+                            Collection.tag_style.ilike(search_term),
+                        )
+                    ),
+                )
+            )
+
+        effective_price = func.coalesce(Produit.prix_promo, Produit.prix)
+
+        if price_min is not None:
+            statement = statement.where(effective_price >= price_min)
+
+        if price_max is not None:
+            statement = statement.where(effective_price <= price_max)
+
+        if taille:
+            statement = statement.where(Produit.variantes.any(Variante.taille.ilike(taille.strip())))
+
+        if couleur:
+            statement = statement.where(Produit.variantes.any(Variante.couleur.ilike(couleur.strip())))
 
         total_statement = select(func.count()).select_from(statement.order_by(None).subquery())
         total = self.db.scalar(total_statement) or 0

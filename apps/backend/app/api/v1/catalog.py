@@ -24,6 +24,11 @@ def list_active_promotions(db: Session = Depends(get_db)):
 def list_produits(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
+    search: str | None = Query(default=None, min_length=2, max_length=120),
+    price_min: int | None = Query(default=None, ge=0),
+    price_max: int | None = Query(default=None, ge=0),
+    taille: str | None = Query(default=None, min_length=1, max_length=40),
+    couleur: str | None = Query(default=None, min_length=1, max_length=60),
     collection_id: UUID | None = None,
     categorie_id: UUID | None = None,
     db: Session = Depends(get_db),
@@ -31,6 +36,11 @@ def list_produits(
     return CatalogService(db).list_products(
         skip=skip,
         limit=limit,
+        search=search,
+        price_min=price_min,
+        price_max=price_max,
+        taille=taille,
+        couleur=couleur,
         collection_id=collection_id,
         categorie_id=categorie_id,
     )

@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
+import { FavoriteToggleButton } from "@/components/favorite-toggle-button";
 import { feedCards, fitRail } from "@/lib/site";
 
 type HomeData = {
@@ -48,8 +49,20 @@ export default function HomePage() {
   const [data, setData] = useState<HomeData>(initialHomeData);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const { client, isLoading: isAuthLoading } = useAuth();
   const { itemCount } = useCart();
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [search]);
 
   useEffect(() => {
     let active = true;
@@ -59,7 +72,7 @@ export default function HomePage() {
         const [collections, promotions, productsResponse] = await Promise.all([
           fetchCollections(),
           fetchActivePromotions(),
-          fetchProducts({ skip: 0, limit: 8 }),
+          fetchProducts({ skip: 0, limit: 8, search: debouncedSearch || undefined }),
         ]);
 
         if (!active) {
@@ -89,10 +102,17 @@ export default function HomePage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [debouncedSearch]);
 
   const nextDropCountdown = formatCountdown(data.promotions[0]?.date_fin ?? null);
   const heroProduct = data.products[0];
+
+  const navItems = [
+    { href: "/", label: "Accueil", icon: HomeIcon },
+    { href: "/catalogue", label: "Catalogue", icon: GridIcon },
+    { href: "/favoris", label: "Favoris", icon: HeartIcon },
+    { href: "/profil", label: "Profil", icon: UserIcon },
+  ] as const;
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col px-4 pb-28 pt-4 sm:px-6 lg:px-8">
@@ -107,21 +127,26 @@ export default function HomePage() {
           </div>
           <Link
             href="/panier"
-            className="rounded-full border border-white/10 bg-white/8 px-3 py-2 text-xs font-semibold text-white/90"
+            className="rounded-full border border-border bg-surface-2 px-3 py-2 text-xs font-semibold text-text"
           >
             Panier {itemCount > 0 ? `(${itemCount})` : ""}
           </Link>
           <Link
             href={client ? "/mes-commandes" : "/connexion"}
-            className="rounded-full border border-white/10 bg-white/8 px-3 py-2 text-xs font-semibold text-white/90"
+            className="rounded-full border border-border bg-surface-2 px-3 py-2 text-xs font-semibold text-text"
           >
             {isAuthLoading ? "Compte" : client ? "Mes commandes" : "Connexion"}
           </Link>
         </div>
 
-        <label className="mt-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-ink/80 px-4 py-3 text-white/45">
+        <label className="mt-3 flex items-center gap-3 rounded-2xl border border-border bg-surface-2 px-4 py-3 text-muted">
           <span aria-hidden>⌕</span>
-          <span className="text-sm">Search t-shirts, hoodies, shorts, jeans...</span>
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search t-shirts, hoodies, shorts, jeans..."
+            className="w-full bg-transparent text-sm text-text outline-none placeholder:text-muted"
+          />
         </label>
       </header>
 
@@ -258,27 +283,32 @@ export default function HomePage() {
             </div>
           ) : data.products.length > 0 ? (
             data.products.map((product, index) => (
-              <Link key={product.id} href={`/produits/${product.id}`}>
                 <motion.article
+                  key={product.id}
                   whileHover={{ y: -4 }}
                   transition={{ duration: 0.2 }}
-                  className="overflow-hidden rounded-[30px] border border-white/10 bg-white/5 shadow-glow"
+                  className="relative overflow-hidden rounded-[30px] border border-white/10 bg-white/5 shadow-glow"
                 >
-                  <div className={`aspect-[4/5] ${feedCards[index % feedCards.length].gradient} p-4`}>
-                    <div className="flex h-full flex-col justify-between rounded-[24px] border border-white/15 bg-black/20 p-4 backdrop-blur-sm">
-                      <span className="w-fit rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-white/90">
-                        {product.collections[0]?.nom ?? "Featured"}
-                      </span>
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.3em] text-white/70">Tap to shop</p>
-                        <h3 className="mt-2 font-display text-2xl font-bold leading-tight">{product.nom}</h3>
-                        <p className="mt-2 max-w-[24ch] text-sm text-white/80">{product.description}</p>
+                  <FavoriteToggleButton
+                    productId={product.id}
+                    className="absolute right-4 top-4 z-10 rounded-full border border-border bg-surface-2 px-3 py-2 text-sm font-semibold text-text"
+                  />
+                  <Link href={`/produits/${product.id}`}>
+                    <div className={`aspect-[4/5] ${feedCards[index % feedCards.length].gradient} p-4`}>
+                      <div className="flex h-full flex-col justify-between rounded-[24px] border border-white/15 bg-black/20 p-4 backdrop-blur-sm">
+                        <span className="w-fit rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-white/90">
+                          {product.collections[0]?.nom ?? "Featured"}
+                        </span>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.3em] text-white/70">Tap to shop</p>
+                          <h3 className="mt-2 font-display text-2xl font-bold leading-tight">{product.nom}</h3>
+                          <p className="mt-2 max-w-[24ch] text-sm text-white/80">{product.description}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 </motion.article>
-              </Link>
-            ))
+              ))
           ) : (
             feedCards.map((card) => (
               <motion.article
@@ -305,21 +335,50 @@ export default function HomePage() {
         </div>
       </section>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-ink/90 px-4 py-3 backdrop-blur-xl">
-        <div className="mx-auto grid max-w-[520px] grid-cols-4 gap-2 text-center text-xs font-semibold text-white/70">
-          {[
-            ["Home", "Accueil"],
-            ["Grid", "Catégories"],
-            ["Heart", "Favoris"],
-            ["User", "Profil"],
-          ].map(([icon, label]) => (
-            <button key={label} className="flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-white/75">
-              <span className="text-base">{icon}</span>
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur-xl">
+        <div className="mx-auto grid max-w-[520px] grid-cols-4 gap-2 text-center text-xs font-semibold text-muted">
+          {navItems.map(({ href, label, icon: Icon }) => (
+            <Link key={label} href={href} className="flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-text">
+              <Icon />
               <span>{label}</span>
-            </button>
+            </Link>
           ))}
         </div>
       </nav>
     </main>
+  );
+}
+
+function HomeIcon() {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current stroke-[1.6]">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 11.5 12 4l8 7.5" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6.5 10.5V20h11v-9.5" />
+    </svg>
+  );
+}
+
+function GridIcon() {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current stroke-[1.6]">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 5h5v5H5zM14 5h5v5h-5zM5 14h5v5H5zM14 14h5v5h-5z" />
+    </svg>
+  );
+}
+
+function HeartIcon() {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current stroke-[1.6]">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 20s-7-4.5-8.5-9A4.8 4.8 0 0 1 12 5.5 4.8 4.8 0 0 1 20.5 11C19 15.5 12 20 12 20Z" />
+    </svg>
+  );
+}
+
+function UserIcon() {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current stroke-[1.6]">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 20a7 7 0 0 1 14 0" />
+    </svg>
   );
 }
