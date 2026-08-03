@@ -43,6 +43,48 @@ export type ProductListResponse = {
   limit: number;
 };
 
+export type LigneCommandeRead = {
+  id: string;
+  produit_id: string;
+  variante_id: string;
+  quantite: number;
+  prix_unitaire: string;
+};
+
+export type CommandeRead = {
+  id: string;
+  statut: string;
+  gouvernorat: string;
+  ville: string;
+  adresse: string;
+  commentaire: string | null;
+  cree_le: string;
+};
+
+export type CommandeDetailRead = CommandeRead & {
+  lignes: LigneCommandeRead[];
+};
+
+export type CommandeCreatePayload = {
+  gouvernorat: string;
+  ville: string;
+  adresse: string;
+  commentaire?: string | null;
+  lignes: { variante_id: string; quantite: number }[];
+};
+
+export class ApiError extends Error {
+  status: number;
+  detail: string;
+
+  constructor(status: number, detail: string) {
+    super(detail);
+    this.name = "ApiError";
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
 const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
 async function getJson<T>(path: string): Promise<T> {
@@ -55,6 +97,43 @@ async function getJson<T>(path: string): Promise<T> {
 
   if (!response.ok) {
     throw new Error(`Request failed for ${path}: ${response.status}`);
+  }
+
+  return (await response.json()) as T;
+}
+
+// Les endpoints /commandes exigent un access token (voir app/api/deps.py côté backend) :
+// pas d'UI de login pour l'instant, donc le token est passé explicitement par l'appelant
+// plutôt que lu depuis un store global qui n'existe pas encore.
+async function requestJsonWithAuth<T>(
+  path: string,
+  accessToken: string,
+  init?: { method?: "GET" | "POST" | "PATCH"; body?: unknown },
+): Promise<T> {
+  const response = await fetch(`${baseUrl}${path}`, {
+    method: init?.method ?? "GET",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+      ...(init?.body ? { "Content-Type": "application/json" } : {}),
+    },
+    body: init?.body ? JSON.stringify(init.body) : undefined,
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    let detail = `Request failed for ${path}: ${response.status}`;
+
+    try {
+      const errorPayload = (await response.json()) as { detail?: string };
+      if (errorPayload.detail) {
+        detail = errorPayload.detail;
+      }
+    } catch {
+      // Keep the generic HTTP status message when the backend does not return JSON.
+    }
+
+    throw new ApiError(response.status, detail);
   }
 
   return (await response.json()) as T;
@@ -86,4 +165,19 @@ export function fetchProducts(params: { skip?: number; limit?: number; collectio
 
 export function fetchProductById(productId: string) {
   return getJson<ProduitRead>(`/produits/${productId}`);
+}
+
+export function createCommande(payload: CommandeCreatePayload, accessToken: string) {
+  return requestJsonWithAuth<CommandeDetailRead>("/commandes", accessToken, {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export function fetchMesCommandes(accessToken: string) {
+  return requestJsonWithAuth<CommandeRead[]>("/commandes", accessToken);
+}
+
+export function fetchCommandeById(commandeId: string, accessToken: string) {
+  return requestJsonWithAuth<CommandeDetailRead>(`/commandes/${commandeId}`, accessToken);
 }

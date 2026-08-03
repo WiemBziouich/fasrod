@@ -12,6 +12,8 @@ import {
   type ProduitRead,
   type PromotionRead,
 } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
+import { useCart } from "@/lib/cart-context";
 import { feedCards, fitRail } from "@/lib/site";
 
 type HomeData = {
@@ -46,6 +48,8 @@ export default function HomePage() {
   const [data, setData] = useState<HomeData>(initialHomeData);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { client, isLoading: isAuthLoading } = useAuth();
+  const { itemCount } = useCart();
 
   useEffect(() => {
     let active = true;
@@ -101,9 +105,18 @@ export default function HomePage() {
             <p className="font-display text-sm uppercase tracking-[0.3em] text-sand">Fasrord</p>
             <p className="text-xs text-white/60">Streetwear only, mobile-first</p>
           </div>
-          <button className="rounded-full border border-white/10 bg-white/8 px-3 py-2 text-xs font-semibold text-white/90">
-            Wishlist
-          </button>
+          <Link
+            href="/panier"
+            className="rounded-full border border-white/10 bg-white/8 px-3 py-2 text-xs font-semibold text-white/90"
+          >
+            Panier {itemCount > 0 ? `(${itemCount})` : ""}
+          </Link>
+          <Link
+            href={client ? "/mes-commandes" : "/connexion"}
+            className="rounded-full border border-white/10 bg-white/8 px-3 py-2 text-xs font-semibold text-white/90"
+          >
+            {isAuthLoading ? "Compte" : client ? "Mes commandes" : "Connexion"}
+          </Link>
         </div>
 
         <label className="mt-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-ink/80 px-4 py-3 text-white/45">

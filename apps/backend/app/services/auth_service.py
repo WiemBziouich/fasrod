@@ -12,8 +12,12 @@ from app.security.jwt import create_access_token, create_refresh_token, decode_t
 from app.security.password import hash_password, verify_password
 
 
-_DUMMY_PASSWORD_HASH = hash_password("this-is-not-a-real-password-used-only-for-timing")
+from functools import lru_cache
 
+
+@lru_cache
+def _dummy_password_hash() -> str:
+    return hash_password("this-is-not-a-real-password-used-only-for-timing")
 
 @dataclass(frozen=True)
 class TokenPair:
@@ -55,9 +59,7 @@ class AuthService:
         client = self.db.scalar(
             select(Client).where(or_(Client.email == payload.identifier, Client.telephone == payload.identifier))
         )
-        hash_to_check = client.mot_de_passe_hash if client is not None else _DUMMY_PASSWORD_HASH
-        password_ok = verify_password(payload.password, hash_to_check)
-
+        hash_to_check = client.mot_de_passe_hash if client is not None else _dummy_password_hash()
         if client is None or not password_ok:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
         token_pair = self._issue_tokens(str(client.id))

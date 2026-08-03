@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { fetchProductById } from "@/lib/api";
+import { ProductPurchaseBox } from "./product-purchase-box";
 
 type ProductPageProps = {
   params: Promise<{
@@ -81,6 +82,8 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                   ))}
                 </div>
               </div>
+
+              <ProductPurchaseBox product={product} />
 
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-sand">Promotions</p>

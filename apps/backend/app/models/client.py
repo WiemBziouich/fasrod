@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import String
+from sqlalchemy import Boolean, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -16,6 +16,7 @@ class Client(Base):
     telephone_secondaire: Mapped[str | None] = mapped_column(String(32), nullable=True)
     email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
     mot_de_passe_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
 
     commandes: Mapped[list["Commande"]] = relationship(back_populates="client", cascade="all, delete-orphan")
     favoris: Mapped[list["Favori"]] = relationship(back_populates="client", cascade="all, delete-orphan")
