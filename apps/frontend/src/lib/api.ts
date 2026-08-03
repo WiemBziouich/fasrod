@@ -4,6 +4,11 @@ export type CollectionRead = {
   tag_style: string | null;
 };
 
+export type CategoryRead = {
+  id: string;
+  nom: string;
+};
+
 export type PromotionRead = {
   id: string;
   type: string;
@@ -330,4 +335,123 @@ export function removeFavori(produitId: string, accessToken: string) {
     method: 'DELETE',
     expectJson: false,
   });
+}
+
+export type AdminCommandeRead = {
+  id: string;
+  statut: string;
+  client_id: string;
+  gouvernorat: string;
+  ville: string;
+  adresse: string;
+  commentaire: string | null;
+  cree_le: string;
+};
+
+export type AdminProduitWrite = {
+  nom: string;
+  description: string;
+  prix: string | number;
+  prix_promo?: string | number | null;
+  categorie_id: string;
+  collection_ids?: string[];
+  promotion_ids?: string[];
+};
+
+export type AdminCategoryWrite = { nom: string };
+export type AdminCollectionWrite = { nom: string; tag_style?: string | null };
+export type AdminPromotionWrite = {
+  type: PromotionRead["type"];
+  valeur: string | number;
+  code?: string | null;
+  date_debut?: string | null;
+  date_fin?: string | null;
+  description?: string | null;
+};
+export type AdminVarianteWrite = { taille: string; couleur: string; quantite_disponible: number };
+export type AdminStockAdjustWrite = { quantite_disponible: number };
+export type AdminCommandeStatusUpdate = { statut: string };
+
+export function fetchAdminProducts(accessToken: string) {
+  return requestJsonWithAuth<ProduitRead[]>('/admin/produits', accessToken);
+}
+
+export function fetchAdminOrders(accessToken: string) {
+  return requestJsonWithAuth<AdminCommandeRead[]>('/admin/commandes', accessToken);
+}
+
+export function fetchAdminCategories(accessToken: string) {
+  return requestJsonWithAuth<CategoryRead[]>('/admin/categories', accessToken);
+}
+
+export function fetchAdminCollections(accessToken: string) {
+  return requestJsonWithAuth<CollectionRead[]>('/admin/collections', accessToken);
+}
+
+export function fetchAdminPromotions(accessToken: string) {
+  return requestJsonWithAuth<PromotionRead[]>('/admin/promotions', accessToken);
+}
+
+export function createAdminProduct(accessToken: string, payload: AdminProduitWrite) {
+  return requestJsonWithAuth<ProduitRead>('/admin/produits', accessToken, { method: 'POST', body: payload });
+}
+
+export function updateAdminProduct(accessToken: string, productId: string, payload: AdminProduitWrite) {
+  return requestJsonWithAuth<ProduitRead>(`/admin/produits/${productId}`, accessToken, { method: 'PATCH', body: payload });
+}
+
+export function deleteAdminProduct(accessToken: string, productId: string) {
+  return requestJsonWithAuth<void>(`/admin/produits/${productId}`, accessToken, { method: 'DELETE', expectJson: false });
+}
+
+export function addAdminVariante(accessToken: string, productId: string, payload: AdminVarianteWrite) {
+  return requestJsonWithAuth<VarianteRead>(`/admin/produits/${productId}/variantes`, accessToken, { method: 'POST', body: payload });
+}
+
+export function updateAdminVariante(accessToken: string, varianteId: string, payload: AdminVarianteWrite) {
+  return requestJsonWithAuth<VarianteRead>(`/admin/variantes/${varianteId}`, accessToken, { method: 'PATCH', body: payload });
+}
+
+export function adjustAdminStock(accessToken: string, varianteId: string, payload: AdminStockAdjustWrite) {
+  return requestJsonWithAuth<VarianteRead>(`/admin/variantes/${varianteId}/stock`, accessToken, { method: 'PATCH', body: payload });
+}
+
+export function createAdminCategory(accessToken: string, payload: AdminCategoryWrite) {
+  return requestJsonWithAuth<CategoryRead>('/admin/categories', accessToken, { method: 'POST', body: payload });
+}
+
+export function updateAdminCategory(accessToken: string, categoryId: string, payload: AdminCategoryWrite) {
+  return requestJsonWithAuth<CategoryRead>(`/admin/categories/${categoryId}`, accessToken, { method: 'PATCH', body: payload });
+}
+
+export function deleteAdminCategory(accessToken: string, categoryId: string) {
+  return requestJsonWithAuth<void>(`/admin/categories/${categoryId}`, accessToken, { method: 'DELETE', expectJson: false });
+}
+
+export function createAdminCollection(accessToken: string, payload: AdminCollectionWrite) {
+  return requestJsonWithAuth<CollectionRead>('/admin/collections', accessToken, { method: 'POST', body: payload });
+}
+
+export function updateAdminCollection(accessToken: string, collectionId: string, payload: AdminCollectionWrite) {
+  return requestJsonWithAuth<CollectionRead>(`/admin/collections/${collectionId}`, accessToken, { method: 'PATCH', body: payload });
+}
+
+export function deleteAdminCollection(accessToken: string, collectionId: string) {
+  return requestJsonWithAuth<void>(`/admin/collections/${collectionId}`, accessToken, { method: 'DELETE', expectJson: false });
+}
+
+export function createAdminPromotion(accessToken: string, payload: AdminPromotionWrite) {
+  return requestJsonWithAuth<PromotionRead>('/admin/promotions', accessToken, { method: 'POST', body: payload });
+}
+
+export function updateAdminPromotion(accessToken: string, promotionId: string, payload: AdminPromotionWrite) {
+  return requestJsonWithAuth<PromotionRead>(`/admin/promotions/${promotionId}`, accessToken, { method: 'PATCH', body: payload });
+}
+
+export function deleteAdminPromotion(accessToken: string, promotionId: string) {
+  return requestJsonWithAuth<void>(`/admin/promotions/${promotionId}`, accessToken, { method: 'DELETE', expectJson: false });
+}
+
+export function updateAdminOrderStatus(accessToken: string, orderId: string, payload: AdminCommandeStatusUpdate) {
+  return requestJsonWithAuth<AdminCommandeRead>(`/admin/commandes/${orderId}/statut`, accessToken, { method: 'PATCH', body: payload });
 }

@@ -137,6 +137,14 @@ export default function HomePage() {
           >
             {isAuthLoading ? "Compte" : client ? "Mes commandes" : "Connexion"}
           </Link>
+          {client?.is_admin ? (
+            <Link
+              href="/admin"
+              className="rounded-full border border-border bg-text px-3 py-2 text-xs font-semibold text-bg"
+            >
+              Admin
+            </Link>
+          ) : null}
         </div>
 
         <label className="mt-3 flex items-center gap-3 rounded-2xl border border-border bg-surface-2 px-4 py-3 text-muted">
