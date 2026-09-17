@@ -39,7 +39,7 @@ export default function CommanderPage() {
 
   const totalQuantity = useMemo(() => items.reduce((sum, item) => sum + item.quantite, 0), [items]);
 
-  if (isLoading || !client) {
+  if (isLoading) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-[960px] items-center px-4 py-8 sm:px-6 lg:px-8">
         <div className="w-full rounded-[28px] border border-border bg-surface p-6 text-center text-muted">
@@ -47,6 +47,10 @@ export default function CommanderPage() {
         </div>
       </main>
     );
+  }
+
+  if (!client) {
+    return null;
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {

@@ -60,6 +60,7 @@ class AuthService:
             select(Client).where(or_(Client.email == payload.identifier, Client.telephone == payload.identifier))
         )
         hash_to_check = client.mot_de_passe_hash if client is not None else _dummy_password_hash()
+        password_ok = verify_password(payload.password, hash_to_check)
         if client is None or not password_ok:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
         token_pair = self._issue_tokens(str(client.id))

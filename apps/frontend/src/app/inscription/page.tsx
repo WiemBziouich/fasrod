@@ -80,6 +80,8 @@ export default function InscriptionPage() {
               value={form.nom}
               onChange={(event) => setForm({ ...form, nom: event.target.value })}
               className="w-full rounded-2xl border border-border bg-surface-2 px-4 py-3 text-sm text-text outline-none"
+              minLength={2}
+              maxLength={150}
               required
             />
           </label>
@@ -91,6 +93,8 @@ export default function InscriptionPage() {
                 value={form.telephone}
                 onChange={(event) => setForm({ ...form, telephone: event.target.value })}
                 className="w-full rounded-2xl border border-border bg-surface-2 px-4 py-3 text-sm text-text outline-none"
+                minLength={8}
+                maxLength={32}
                 required
               />
             </label>
@@ -101,6 +105,7 @@ export default function InscriptionPage() {
                 value={form.telephone_secondaire}
                 onChange={(event) => setForm({ ...form, telephone_secondaire: event.target.value })}
                 className="w-full rounded-2xl border border-border bg-surface-2 px-4 py-3 text-sm text-text outline-none"
+                maxLength={32}
               />
             </label>
           </div>
@@ -123,6 +128,8 @@ export default function InscriptionPage() {
               value={form.password}
               onChange={(event) => setForm({ ...form, password: event.target.value })}
               className="w-full rounded-2xl border border-border bg-surface-2 px-4 py-3 text-sm text-text outline-none"
+              minLength={12}
+              maxLength={128}
               required
             />
           </label>
