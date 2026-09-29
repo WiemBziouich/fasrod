@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Manrope, Space_Grotesk } from "next/font/google";
 
 import "./globals.css";
+
+import { BottomNav } from "@/components/bottom-nav";
 import { AuthProvider } from "@/lib/auth-context";
 import { CartProvider } from "@/lib/cart-context";
 import { FavoritesProvider } from "@/lib/favorites-context";
@@ -21,16 +23,24 @@ export const metadata: Metadata = {
   description: "Streetwear e-commerce for Fasrord.",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="fr" className={`${display.variable} ${body.variable}`}>
-      <body>
+      <body className="pb-20">
         <AuthProvider>
           <FavoritesProvider>
-            <CartProvider>{children}</CartProvider>
+            <CartProvider>
+              {children}
+              <BottomNav />
+            </CartProvider>
           </FavoritesProvider>
         </AuthProvider>
       </body>
     </html>
   );
 }
+
