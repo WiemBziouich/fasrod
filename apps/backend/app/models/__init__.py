@@ -11,3 +11,4 @@ from app.models.mouvement_stock import MouvementStock
 from app.models.produit import Produit
 from app.models.promotion import Promotion
 from app.models.variante import Variante
+from app.models.email_verification_token import EmailVerificationToken
