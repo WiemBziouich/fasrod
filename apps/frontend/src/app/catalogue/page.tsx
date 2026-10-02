@@ -146,7 +146,7 @@ export default function CataloguePage() {
 
         {error ? <div className="mt-4 rounded-2xl border border-border bg-surface-2 px-4 py-3 text-sm text-text">{error}</div> : null}
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {isLoading ? (
             <div className="rounded-[30px] border border-border bg-surface-2 p-6 text-sm text-muted">
               Chargement du catalogue...

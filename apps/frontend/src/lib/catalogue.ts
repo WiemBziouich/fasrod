@@ -80,3 +80,48 @@ export function getProductImage(
     orderedImages[0]
   );
 }
+
+const SIZE_ORDER = ["xxs", "xs", "s", "m", "l", "xl", "xxl", "2xl", "xxxl", "3xl"];
+
+export function sortSizes(sizes: string[]): string[] {
+  const rank = (size: string): number => {
+    const index = SIZE_ORDER.indexOf(size.trim().toLowerCase());
+    if (index >= 0) {
+      return index;
+    }
+    const numeric = Number(size);
+    return Number.isNaN(numeric) ? 1000 : 100 + numeric;
+  };
+
+  return [...sizes].sort((left, right) => {
+    const diff = rank(left) - rank(right);
+    return diff !== 0 ? diff : left.localeCompare(right);
+  });
+}
+
+// Toutes les images à afficher dans la galerie pour une couleur donnée.
+// Inclut : images de cette couleur, images liées à une variante de cette couleur,
+// et images génériques (sans couleur ni variante). Si rien ne correspond, renvoie toutes les images.
+export function getProductImages(
+  product: Pick<ProduitRead, "images" | "variantes">,
+  color?: string,
+): ProduitImageRead[] {
+  const ordered = [...product.images].sort((left, right) => left.ordre - right.ordre);
+
+  if (!color) {
+    return ordered;
+  }
+
+  const variantIds = new Set(
+    product.variantes.filter((variant) => variant.couleur === color).map((variant) => variant.id),
+  );
+
+  const matching = ordered.filter(
+    (image) =>
+      image.couleur === color ||
+      (image.variante_id !== null && variantIds.has(image.variante_id)) ||
+      (image.couleur === null && image.variante_id === null),
+  );
+
+  return matching.length > 0 ? matching : ordered;
+}

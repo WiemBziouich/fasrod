@@ -264,7 +264,7 @@ export default function HomePage() {
           </div>
         ) : null}
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {isLoading ? (
             <div className="rounded-[30px] border border-white/10 bg-white/5 p-6 text-sm text-white/60">
               Loading live catalog...
