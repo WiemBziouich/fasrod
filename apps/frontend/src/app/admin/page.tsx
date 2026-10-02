@@ -14,6 +14,7 @@ import {
   deleteAdminCollection,
   deleteAdminProduct,
   deleteAdminPromotion,
+  deleteAdminImage,
   fetchAdminCategories,
   fetchAdminCollections,
   fetchAdminOrders,
@@ -24,6 +25,8 @@ import {
   updateAdminOrderStatus,
   updateAdminProduct,
   updateAdminPromotion,
+  updateAdminImage,
+  uploadAdminProductImage,
   type AdminCommandeRead,
   type AdminCategoryWrite,
   type AdminCollectionWrite,
@@ -113,6 +116,12 @@ export default function AdminPage() {
 
   const [selectedOrderId, setSelectedOrderId] = useState("");
   const [orderStatusForm, setOrderStatusForm] = useState<AdminCommandeStatusUpdate>(initialOrderStatusForm);
+  const [imageProductId, setImageProductId] = useState("");
+  const [imageColor, setImageColor] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageIsPrimary, setImageIsPrimary] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageMessage, setImageMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (isLoading) {
@@ -137,8 +146,16 @@ export default function AdminPage() {
 
     async function loadDashboard() {
       try {
-        const [products, orders, categories, collections, promotions] = await Promise.all([
-          fetchAdminProducts(accessToken),
+        const products = await fetchAdminProducts(accessToken);
+
+        if (!active) {
+          return;
+        }
+
+        setState((current) => ({ ...current, products }));
+        setError(null);
+
+        const [orders, categories, collections, promotions] = await Promise.all([
           fetchAdminOrders(accessToken),
           fetchAdminCategories(accessToken),
           fetchAdminCollections(accessToken),
@@ -149,8 +166,7 @@ export default function AdminPage() {
           return;
         }
 
-        setState({ products, orders, categories, collections, promotions });
-        setError(null);
+        setState((current) => ({ ...current, orders, categories, collections, promotions }));
       } catch (loadError) {
         if (!active) {
           return;
@@ -177,6 +193,15 @@ export default function AdminPage() {
     [selectedOrderId, state.orders],
   );
 
+  const imageProduct = useMemo(
+    () => state.products.find((product) => product.id === imageProductId) ?? null,
+    [imageProductId, state.products],
+  );
+  const imageColors = useMemo(
+    () => Array.from(new Set(imageProduct?.variantes.map((variant) => variant.couleur) ?? [])),
+    [imageProduct],
+  );
+
   if (isLoading) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-[1200px] items-center px-4 py-8 sm:px-6 lg:px-8">
@@ -197,14 +222,15 @@ export default function AdminPage() {
 
   async function reload() {
     if (!accessToken) return;
-    const [products, orders, categories, collections, promotions] = await Promise.all([
-      fetchAdminProducts(accessToken),
+    const products = await fetchAdminProducts(accessToken);
+    setState((current) => ({ ...current, products }));
+    const [orders, categories, collections, promotions] = await Promise.all([
       fetchAdminOrders(accessToken),
       fetchAdminCategories(accessToken),
       fetchAdminCollections(accessToken),
       fetchAdminPromotions(accessToken),
     ]);
-    setState({ products, orders, categories, collections, promotions });
+    setState((current) => ({ ...current, orders, categories, collections, promotions }));
   }
 
   async function handleProductSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -324,6 +350,50 @@ export default function AdminPage() {
     await reload();
   }
 
+  async function handleImageUpload(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!accessToken || !imageProductId || !imageFile) return;
+
+    setIsUploadingImage(true);
+    setImageMessage(null);
+    try {
+      await uploadAdminProductImage(accessToken, imageProductId, imageFile, {
+        couleur: imageColor || undefined,
+        estPrincipale: imageIsPrimary,
+      });
+      setImageFile(null);
+      setImageIsPrimary(false);
+      setImageMessage("Image téléversée avec succès.");
+      await reload();
+    } catch (uploadError) {
+      setImageMessage(uploadError instanceof Error ? uploadError.message : "Échec du téléversement.");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  }
+
+  async function handleDeleteImage(imageId: string) {
+    if (!accessToken) return;
+    try {
+      await deleteAdminImage(accessToken, imageId);
+      setImageMessage("Image supprimée.");
+      await reload();
+    } catch (deleteError) {
+      setImageMessage(deleteError instanceof Error ? deleteError.message : "Échec de la suppression.");
+    }
+  }
+
+  async function handleSetPrimaryImage(imageId: string) {
+    if (!accessToken) return;
+    try {
+      await updateAdminImage(accessToken, imageId, { est_principale: true });
+      setImageMessage("Image principale mise à jour.");
+      await reload();
+    } catch (updateError) {
+      setImageMessage(updateError instanceof Error ? updateError.message : "Échec de la mise à jour.");
+    }
+  }
+
   return (
     <main className="mx-auto min-h-screen w-full max-w-[1440px] px-4 py-4 sm:px-6 lg:px-8">
       <section className="rounded-[28px] border border-border bg-surface p-4">
@@ -434,6 +504,62 @@ export default function AdminPage() {
               <input className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-text outline-none" type="number" min={0} value={stockForm.quantite_disponible} onChange={(event) => setStockForm({ ...stockForm, quantite_disponible: Number(event.target.value) })} placeholder="Quantité en stock" />
               <button type="submit" className="rounded-full border border-border bg-text px-4 py-3 text-sm font-semibold text-bg">Ajuster le stock</button>
             </form>
+          </section>
+
+          <section className="rounded-[22px] border border-border bg-surface-2 p-4">
+            <h2 className="text-lg font-semibold text-text">Images produit</h2>
+            <form className="mt-4 grid gap-3" onSubmit={handleImageUpload}>
+              <select
+                value={imageProductId}
+                onChange={(event) => {
+                  setImageProductId(event.target.value);
+                  setImageColor("");
+                  setImageMessage(null);
+                }}
+                className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-text outline-none"
+              >
+                <option value="">Choisir un produit</option>
+                {state.products.map((product) => <option key={product.id} value={product.id}>{product.nom}</option>)}
+              </select>
+              <select
+                value={imageColor}
+                onChange={(event) => setImageColor(event.target.value)}
+                disabled={!imageProduct}
+                className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-text outline-none disabled:opacity-50"
+              >
+                <option value="">Image produit-wide</option>
+                {imageColors.map((color) => <option key={color} value={color}>{color}</option>)}
+              </select>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
+                className="w-full text-sm text-muted"
+              />
+              <label className="flex items-center gap-2 text-sm text-text">
+                <input type="checkbox" checked={imageIsPrimary} onChange={(event) => setImageIsPrimary(event.target.checked)} />
+                Définir comme image principale
+              </label>
+              <button type="submit" disabled={isUploadingImage || !imageProductId || !imageFile} className="rounded-full border border-border bg-text px-4 py-3 text-sm font-semibold text-bg disabled:cursor-not-allowed disabled:opacity-50">
+                {isUploadingImage ? "Téléversement..." : "Téléverser l’image"}
+              </button>
+              {imageMessage ? <p className="text-sm text-muted">{imageMessage}</p> : null}
+            </form>
+
+            {imageProduct ? (
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                {imageProduct.images.length > 0 ? imageProduct.images.map((image) => (
+                  <article key={image.id} className="rounded-2xl border border-border bg-surface p-3">
+                    <img src={image.url} alt={image.alt_text ?? imageProduct.nom} className="aspect-[4/5] w-full rounded-xl object-cover" />
+                    <p className="mt-2 text-xs text-muted">{image.couleur ?? "Produit-wide"}{image.est_principale ? " · Principale" : ""}</p>
+                    <div className="mt-2 flex gap-2">
+                      {!image.est_principale ? <button type="button" onClick={() => void handleSetPrimaryImage(image.id)} className="rounded-full border border-border px-3 py-2 text-xs font-semibold text-text">Principale</button> : null}
+                      <button type="button" onClick={() => void handleDeleteImage(image.id)} className="rounded-full border border-border px-3 py-2 text-xs font-semibold text-text">Supprimer</button>
+                    </div>
+                  </article>
+                )) : <p className="text-sm text-muted">Aucune image pour ce produit.</p>}
+              </div>
+            ) : null}
           </section>
 
           <section className="rounded-[22px] border border-border bg-surface-2 p-4">

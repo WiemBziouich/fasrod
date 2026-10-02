@@ -46,6 +46,12 @@ class Settings:
     # Database
     database_url: str | None = None
 
+    # Cloudinary
+    cloudinary_cloud_name: str | None = None
+    cloudinary_api_key: str | None = None
+    cloudinary_api_secret: str | None = None
+    cloudinary_max_upload_bytes: int = 5 * 1024 * 1024
+
     # Redis
     redis_url: str | None = None
 
@@ -82,6 +88,12 @@ def get_settings() -> Settings:
 
         # Database
         database_url=_get_env("DATABASE_URL"),
+
+        # Cloudinary
+        cloudinary_cloud_name=_get_env("CLOUDINARY_CLOUD_NAME"),
+        cloudinary_api_key=_get_env("CLOUDINARY_API_KEY"),
+        cloudinary_api_secret=_get_env("CLOUDINARY_API_SECRET"),
+        cloudinary_max_upload_bytes=_get_int_env("CLOUDINARY_MAX_UPLOAD_BYTES", 5 * 1024 * 1024),
 
         # Redis
         redis_url=_get_env("REDIS_URL"),

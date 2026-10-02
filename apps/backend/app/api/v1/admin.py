@@ -1,6 +1,9 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import re
+
+from cloudinary.exceptions import Error as CloudinaryError
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_admin_client
@@ -12,19 +15,31 @@ from app.schemas.admin import (
     CommandeAdminRead,
     CommandeStatusAdminUpdate,
     ProduitAdminRead,
+    ProduitImageUpdate,
+    ProduitImageWrite,
     ProduitWrite,
     PromotionWrite,
     StockAdjustWrite,
     VarianteWrite,
 )
-from app.schemas.catalog import CategoryRead, CollectionRead, PromotionRead, VarianteRead
+from app.schemas.catalog import CategoryRead, CollectionRead, ProduitImageRead, PromotionRead, VarianteRead
 from app.services.admin_service import AdminService
+from app.services.cloudinary_service import (
+    CloudinaryConfigurationError,
+    InvalidImageUpload,
+    delete_product_image,
+    upload_product_image,
+)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 def _not_found(exc: LookupError) -> HTTPException:
     return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+
+
+def _bad_request(exc: ValueError) -> HTTPException:
+    return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
 @router.get("/produits", response_model=list[ProduitAdminRead])
@@ -70,6 +85,85 @@ def add_variante(produit_id: UUID, payload: VarianteWrite, _admin: Client = Depe
         return VarianteRead.model_validate(AdminService(db).add_variante(produit_id, payload))
     except LookupError as exc:
         raise _not_found(exc) from exc
+
+
+@router.post("/produits/{produit_id}/images", response_model=ProduitImageRead, status_code=status.HTTP_201_CREATED)
+def add_image(produit_id: UUID, payload: ProduitImageWrite, _admin: Client = Depends(get_current_admin_client), db: Session = Depends(get_db)):
+    try:
+        return ProduitImageRead.model_validate(AdminService(db).add_image(produit_id, payload))
+    except LookupError as exc:
+        raise _not_found(exc) from exc
+    except ValueError as exc:
+        raise _bad_request(exc) from exc
+
+
+@router.post("/produits/{produit_id}/images/upload", response_model=ProduitImageRead, status_code=status.HTTP_201_CREATED)
+async def upload_image(
+    produit_id: UUID,
+    image: UploadFile = File(...),
+    couleur: str | None = Form(default=None),
+    variante_id: UUID | None = Form(default=None),
+    ordre: int = Form(default=0, ge=0),
+    est_principale: bool = Form(default=False),
+    _admin: Client = Depends(get_current_admin_client),
+    db: Session = Depends(get_db),
+):
+    service = AdminService(db)
+    try:
+        service._validate_image_target(produit_id, variante_id, couleur)
+        target = re.sub(r"[^a-zA-Z0-9_-]+", "_", (couleur or "product").lower()).strip("_") or "product"
+        uploaded = await upload_product_image(image, f"{produit_id}/{target}")
+        try:
+            return ProduitImageRead.model_validate(
+                service.add_image(
+                    produit_id,
+                    ProduitImageWrite(
+                        variante_id=variante_id,
+                        couleur=couleur,
+                        url=uploaded.secure_url,
+                        ordre=ordre,
+                        est_principale=est_principale,
+                    ),
+                    cloudinary_public_id=uploaded.public_id,
+                )
+            )
+        except Exception:
+            delete_product_image(uploaded.public_id)
+            raise
+    except LookupError as exc:
+        raise _not_found(exc) from exc
+    except (InvalidImageUpload, ValueError) as exc:
+        raise _bad_request(exc) from exc
+    except CloudinaryConfigurationError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+    except CloudinaryError as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Cloudinary upload failed") from exc
+
+
+@router.patch("/images/{image_id}", response_model=ProduitImageRead)
+def update_image(image_id: UUID, payload: ProduitImageUpdate, _admin: Client = Depends(get_current_admin_client), db: Session = Depends(get_db)):
+    try:
+        return ProduitImageRead.model_validate(AdminService(db).update_image(image_id, payload))
+    except LookupError as exc:
+        raise _not_found(exc) from exc
+    except ValueError as exc:
+        raise _bad_request(exc) from exc
+
+
+@router.delete("/images/{image_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_image(image_id: UUID, _admin: Client = Depends(get_current_admin_client), db: Session = Depends(get_db)):
+    try:
+        service = AdminService(db)
+        image = service.get_image(image_id)
+        if image.cloudinary_public_id:
+            delete_product_image(image.cloudinary_public_id)
+        service.delete_image(image_id)
+    except LookupError as exc:
+        raise _not_found(exc) from exc
+    except CloudinaryConfigurationError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+    except CloudinaryError as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Cloudinary delete failed") from exc
 
 
 @router.patch("/variantes/{variante_id}", response_model=VarianteRead)

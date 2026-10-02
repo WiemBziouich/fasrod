@@ -42,6 +42,24 @@ class ProduitWrite(BaseModel):
     promotion_ids: list[UUID] = Field(default_factory=list)
 
 
+class ProduitImageWrite(BaseModel):
+    variante_id: UUID | None = None
+    couleur: str | None = Field(default=None, min_length=1, max_length=60)
+    url: str = Field(min_length=1, max_length=2048)
+    alt_text: str | None = Field(default=None, max_length=255)
+    ordre: int = Field(default=0, ge=0)
+    est_principale: bool = False
+
+
+class ProduitImageUpdate(BaseModel):
+    variante_id: UUID | None = None
+    couleur: str | None = Field(default=None, min_length=1, max_length=60)
+    url: str | None = Field(default=None, min_length=1, max_length=2048)
+    alt_text: str | None = Field(default=None, max_length=255)
+    ordre: int | None = Field(default=None, ge=0)
+    est_principale: bool | None = None
+
+
 class ProduitAdminRead(ProduitDetailRead):
     pass
 

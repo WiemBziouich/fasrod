@@ -41,6 +41,19 @@ class VarianteRead(BaseModel):
     quantite_disponible: int
 
 
+class ProduitImageRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    produit_id: UUID
+    variante_id: UUID | None = None
+    couleur: str | None = None
+    url: str
+    alt_text: str | None = None
+    ordre: int
+    est_principale: bool
+
+
 class ProduitListItemRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -52,6 +65,7 @@ class ProduitListItemRead(BaseModel):
     categorie: CategoryRead
     collections: list[CollectionRead] = Field(default_factory=list)
     variantes: list[VarianteRead] = Field(default_factory=list)
+    images: list[ProduitImageRead] = Field(default_factory=list)
     promotions: list[PromotionRead] = Field(default_factory=list)
 
 

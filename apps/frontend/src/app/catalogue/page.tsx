@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { fetchProducts, type ProduitRead } from "@/lib/api";
+import { CatalogueProductCard } from "@/components/catalogue-product-card";
+import { catalogueProducts, formatPrice, getCatalogueProduct, getProductColors, getProductImage, getProductPrice } from "@/lib/catalogue";
 
 type CatalogueFilters = {
   priceMin: string;
@@ -80,6 +82,8 @@ export default function CataloguePage() {
     };
   }, [debouncedFilters]);
 
+  const legacyProducts = products.filter((product) => !getCatalogueProduct(product.nom));
+
   return (
     <main className="mx-auto min-h-screen w-full max-w-[1440px] px-4 py-4 sm:px-6 lg:px-8">
       <section className="rounded-[28px] border border-border bg-surface p-4">
@@ -147,8 +151,13 @@ export default function CataloguePage() {
             <div className="rounded-[30px] border border-border bg-surface-2 p-6 text-sm text-muted">
               Chargement du catalogue...
             </div>
-          ) : products.length > 0 ? (
-            products.map((product) => (
+          ) : (
+            <>
+              {catalogueProducts.map((product) => {
+                const apiProduct = products.find((entry) => entry.nom === product.name);
+                return <CatalogueProductCard key={product.name} product={product} productId={apiProduct?.id} image={apiProduct ? getProductImage(apiProduct) : undefined} />;
+              })}
+              {legacyProducts.map((product) => (
               <Link key={product.id} href={`/produits/${product.id}`}>
                 <article className="overflow-hidden rounded-[30px] border border-border bg-surface-2 p-4">
                   <div className="aspect-[4/5] rounded-[24px] border border-border bg-surface p-4">
@@ -159,18 +168,17 @@ export default function CataloguePage() {
                       <div>
                         <p className="text-xs uppercase tracking-[0.3em] text-muted">Catalogue</p>
                         <h2 className="mt-2 text-2xl font-bold leading-tight text-text">{product.nom}</h2>
-                        <p className="mt-2 text-sm text-muted">{product.description}</p>
+                        <p className="mt-2 text-lg font-semibold text-text">{formatPrice(getProductPrice(product))}</p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {getProductColors(product).map((color) => <span key={color} className="rounded-full border border-border px-2 py-1 text-xs text-muted">{color}</span>)}
+                        </div>
                       </div>
-                      <p className="text-sm text-text">{product.prix_promo ?? product.prix}</p>
                     </div>
                   </div>
                 </article>
               </Link>
-            ))
-          ) : (
-            <div className="rounded-[30px] border border-border bg-surface-2 p-6 text-sm text-muted">
-              Aucun produit ne correspond à ces filtres.
-            </div>
+              ))}
+            </>
           )}
         </div>
       </section>

@@ -27,5 +27,6 @@ class Variante(Base):
     quantite_disponible: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     produit: Mapped["Produit"] = relationship(back_populates="variantes")
+    images: Mapped[list["ProduitImage"]] = relationship(back_populates="variante")
     mouvements_stock: Mapped[list["MouvementStock"]] = relationship(back_populates="variante", cascade="all, delete-orphan")
     lignes_commandes: Mapped[list["LigneCommande"]] = relationship(back_populates="variante")

@@ -15,7 +15,10 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
 import { FavoriteToggleButton } from "@/components/favorite-toggle-button";
-import { feedCards, fitRail } from "@/lib/site";
+import { CatalogueProductCard } from "@/components/catalogue-product-card";
+import { FitBuilder } from "@/components/fit-builder";
+import { catalogueProducts, formatPrice, getCatalogueProduct, getProductColors, getProductImage, getProductPrice } from "@/lib/catalogue";
+import { feedCards } from "@/lib/site";
 
 type HomeData = {
   collections: CollectionRead[];
@@ -72,7 +75,7 @@ export default function HomePage() {
         const [collections, promotions, productsResponse] = await Promise.all([
           fetchCollections(),
           fetchActivePromotions(),
-          fetchProducts({ skip: 0, limit: 8, search: debouncedSearch || undefined }),
+          fetchProducts({ skip: 0, limit: 100, search: debouncedSearch || undefined }),
         ]);
 
         if (!active) {
@@ -105,14 +108,9 @@ export default function HomePage() {
   }, [debouncedSearch]);
 
   const nextDropCountdown = formatCountdown(data.promotions[0]?.date_fin ?? null);
-  const heroProduct = data.products[0];
-
-  const navItems = [
-    { href: "/", label: "Accueil", icon: HomeIcon },
-    { href: "/catalogue", label: "Catalogue", icon: GridIcon },
-    { href: "/favoris", label: "Favoris", icon: HeartIcon },
-    { href: "/profil", label: "Profil", icon: UserIcon },
-  ] as const;
+  const heroProduct = data.products.find((product) => getCatalogueProduct(product.nom));
+  const heroCatalogueProduct = catalogueProducts[0];
+  const legacyProducts = data.products.filter((product) => !getCatalogueProduct(product.nom));
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col px-4 pb-28 pt-4 sm:px-6 lg:px-8">
@@ -200,14 +198,14 @@ export default function HomePage() {
                 Trending
               </span>
               <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs text-white/80">
-                {heroProduct ? `${heroProduct.variantes.length} variants` : isLoading ? "Loading" : "0 variants"}
+                {heroProduct ? `${heroProduct.variantes.length} variants` : `${heroCatalogueProduct.colors.length} colors`}
               </span>
             </div>
 
             <div className="max-w-[20ch]">
               <p className="text-xs uppercase tracking-[0.3em] text-white/70">Video preview</p>
               <h2 className="mt-2 font-display text-3xl font-bold leading-tight sm:text-5xl">
-                {heroProduct?.nom ?? "Oversized tee, baggy denim, one tap to buy."}
+                {heroProduct?.nom ?? heroCatalogueProduct.name}
               </h2>
             </div>
 
@@ -219,7 +217,7 @@ export default function HomePage() {
               <div>
                 <p className="text-[10px] uppercase tracking-[0.25em] text-white/55">Price</p>
                 <p className="mt-1 text-sm font-semibold">
-                  {heroProduct?.prix_promo ?? heroProduct?.prix ?? "From 69 DT"}
+                  {heroProduct ? formatPrice(getProductPrice(heroProduct)) : formatPrice(heroCatalogueProduct.price)}
                 </p>
               </div>
               <div>
@@ -243,30 +241,12 @@ export default function HomePage() {
       <section className="mt-5 rounded-[32px] border border-white/10 bg-white/5 p-4 shadow-glow">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-sand">Complete the fit</p>
-            <h2 className="mt-1 font-display text-xl font-bold">Add pieces that match the same silhouette.</h2>
+            <p className="text-xs uppercase tracking-[0.3em] text-sand">Build your fit</p>
+            <h2 className="mt-1 font-display text-xl font-bold">Compose ton outfit, librement.</h2>
           </div>
-          <button className="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-white/90">
-            View all
-          </button>
         </div>
-
-        <div className="mt-4 flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {fitRail.map((item) => (
-            <article
-              key={item.name}
-              className="w-[180px] shrink-0 rounded-[26px] border border-white/10 bg-ink/90 p-4"
-            >
-              <div className="aspect-[4/5] rounded-[20px] bg-gradient-to-br from-white/12 to-white/5" />
-              <p className="mt-3 text-[10px] uppercase tracking-[0.28em] text-sand">{item.type}</p>
-              <h3 className="mt-1 font-display text-lg font-bold">{item.name}</h3>
-              <div className="mt-2 flex items-center justify-between text-sm text-white/70">
-                <span>{item.price}</span>
-                <span className="rounded-full border border-white/10 px-2 py-1 text-[11px]">Add</span>
-              </div>
-            </article>
-          ))}
-        </div>
+        <p className="mt-2 text-sm text-white/65">Associe n&apos;importe quel baggy avec n&apos;importe quel t-shirt.</p>
+        <FitBuilder products={data.products} />
       </section>
 
       <section className="mt-5">
@@ -289,8 +269,13 @@ export default function HomePage() {
             <div className="rounded-[30px] border border-white/10 bg-white/5 p-6 text-sm text-white/60">
               Loading live catalog...
             </div>
-          ) : data.products.length > 0 ? (
-            data.products.map((product, index) => (
+          ) : (
+            <>
+              {catalogueProducts.map((product) => {
+                const apiProduct = data.products.find((entry) => entry.nom === product.name);
+                return <CatalogueProductCard key={product.name} product={product} productId={apiProduct?.id} image={apiProduct ? getProductImage(apiProduct) : undefined} />;
+              })}
+              {legacyProducts.map((product, index) => (
                 <motion.article
                   key={product.id}
                   whileHover={{ y: -4 }}
@@ -310,83 +295,18 @@ export default function HomePage() {
                         <div>
                           <p className="text-xs uppercase tracking-[0.3em] text-white/70">Tap to shop</p>
                           <h3 className="mt-2 font-display text-2xl font-bold leading-tight">{product.nom}</h3>
-                          <p className="mt-2 max-w-[24ch] text-sm text-white/80">{product.description}</p>
+                          <p className="mt-2 text-sm text-white/80">{formatPrice(getProductPrice(product))} · {getProductColors(product).join(", ")}</p>
                         </div>
                       </div>
                     </div>
                   </Link>
                 </motion.article>
-              ))
-          ) : (
-            feedCards.map((card) => (
-              <motion.article
-                key={card.title}
-                whileHover={{ y: -4 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden rounded-[30px] border border-white/10 bg-white/5 shadow-glow"
-              >
-                <div className={`aspect-[4/5] ${card.gradient} p-4`}>
-                  <div className="flex h-full flex-col justify-between rounded-[24px] border border-white/15 bg-black/20 p-4 backdrop-blur-sm">
-                    <span className="w-fit rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-white/90">
-                      {card.label}
-                    </span>
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.3em] text-white/70">Tap to shop</p>
-                      <h3 className="mt-2 font-display text-2xl font-bold leading-tight">{card.title}</h3>
-                      <p className="mt-2 max-w-[24ch] text-sm text-white/80">{card.subtitle}</p>
-                    </div>
-                  </div>
-                </div>
-              </motion.article>
-            ))
+                ))}
+            </>
           )}
         </div>
       </section>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur-xl">
-        <div className="mx-auto grid max-w-[520px] grid-cols-4 gap-2 text-center text-xs font-semibold text-muted">
-          {navItems.map(({ href, label, icon: Icon }) => (
-            <Link key={label} href={href} className="flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-text">
-              <Icon />
-              <span>{label}</span>
-            </Link>
-          ))}
-        </div>
-      </nav>
     </main>
-  );
-}
-
-function HomeIcon() {
-  return (
-    <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current stroke-[1.6]">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 11.5 12 4l8 7.5" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6.5 10.5V20h11v-9.5" />
-    </svg>
-  );
-}
-
-function GridIcon() {
-  return (
-    <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current stroke-[1.6]">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 5h5v5H5zM14 5h5v5h-5zM5 14h5v5H5zM14 14h5v5h-5z" />
-    </svg>
-  );
-}
-
-function HeartIcon() {
-  return (
-    <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current stroke-[1.6]">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 20s-7-4.5-8.5-9A4.8 4.8 0 0 1 12 5.5 4.8 4.8 0 0 1 20.5 11C19 15.5 12 20 12 20Z" />
-    </svg>
-  );
-}
-
-function UserIcon() {
-  return (
-    <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current stroke-[1.6]">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 20a7 7 0 0 1 14 0" />
-    </svg>
   );
 }

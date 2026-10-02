@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type { ProduitRead } from "@/lib/api";
+import { formatPrice, getProductImage, getProductPrice } from "@/lib/catalogue";
 import { useCart } from "@/lib/cart-context";
 
 type ProductPurchaseBoxProps = {
@@ -29,6 +30,7 @@ export function ProductPurchaseBox({ product }: ProductPurchaseBoxProps) {
     (variant) => variant.taille === selectedSize && variant.couleur === selectedColor,
   );
   const isOutOfStock = selectedVariant ? selectedVariant.quantite_disponible <= 0 : true;
+  const selectedImage = getProductImage(product, selectedColor, selectedVariant?.id);
 
   return (
     <section className="space-y-4 rounded-[24px] border border-white/10 bg-white/5 p-4">
@@ -36,6 +38,18 @@ export function ProductPurchaseBox({ product }: ProductPurchaseBoxProps) {
         <p className="text-[11px] uppercase tracking-[0.32em] text-sand">Choisir la variante</p>
         <h2 className="mt-2 text-2xl font-bold leading-tight text-text">Taille et couleur</h2>
       </div>
+
+      {selectedImage ? (
+        <img
+          src={selectedImage.url}
+          alt={selectedImage.alt_text ?? `${product.nom} ${selectedColor}`}
+          className="aspect-[4/5] w-full rounded-2xl object-cover"
+        />
+      ) : (
+        <div className="rounded-2xl border border-border bg-surface-2 px-4 py-3 text-sm text-muted">
+          Aucune image disponible pour cette couleur.
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="space-y-2">
@@ -94,7 +108,7 @@ export function ProductPurchaseBox({ product }: ProductPurchaseBoxProps) {
             nom: product.nom,
             taille: selectedVariant.taille,
             couleur: selectedVariant.couleur,
-            prix: product.prix_promo ?? product.prix,
+            prix: formatPrice(getProductPrice(product)),
           });
         }}
         className="w-full rounded-full border border-border bg-text px-4 py-3 text-sm font-semibold text-bg disabled:cursor-not-allowed disabled:opacity-50"

@@ -11,3 +11,4 @@ class ClientRead(BaseModel):
     telephone: str
     telephone_secondaire: str | None = None
     email: EmailStr
+    is_admin: bool = False

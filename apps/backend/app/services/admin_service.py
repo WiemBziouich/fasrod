@@ -10,6 +10,7 @@ from app.models.collection import Collection
 from app.models.commande import Commande
 from app.models.enums import CommandeStatut
 from app.models.produit import Produit
+from app.models.produit_image import ProduitImage
 from app.models.promotion import Promotion
 from app.models.variante import Variante
 from app.schemas.admin import (
@@ -17,6 +18,8 @@ from app.schemas.admin import (
     CollectionWrite,
     CommandeStatusAdminUpdate,
     ProduitAdminRead,
+    ProduitImageUpdate,
+    ProduitImageWrite,
     ProduitWrite,
     PromotionWrite,
     StockAdjustWrite,
@@ -35,6 +38,7 @@ class AdminService:
                 selectinload(Produit.categorie),
                 selectinload(Produit.collections),
                 selectinload(Produit.variantes),
+                selectinload(Produit.images),
                 selectinload(Produit.promotions),
             )
             .order_by(Produit.nom.asc())
@@ -111,6 +115,79 @@ class AdminService:
         self.db.commit()
         self.db.refresh(variante)
         return variante
+
+    def add_image(
+        self,
+        produit_id: UUID,
+        payload: ProduitImageWrite,
+        cloudinary_public_id: str | None = None,
+    ) -> ProduitImage:
+        produit = self.db.get(Produit, produit_id)
+        if produit is None:
+            raise LookupError("Produit not found")
+
+        self._validate_image_target(produit_id, payload.variante_id, payload.couleur)
+        image = self.db.scalar(
+            select(ProduitImage).where(
+                ProduitImage.produit_id == produit_id,
+                ProduitImage.variante_id == payload.variante_id,
+                ProduitImage.couleur == payload.couleur,
+                ProduitImage.url == payload.url,
+            )
+        )
+        if image is not None:
+            return image
+
+        image = ProduitImage(
+            produit_id=produit_id,
+            cloudinary_public_id=cloudinary_public_id,
+            **payload.model_dump(),
+        )
+        self.db.add(image)
+        self.db.commit()
+        self.db.refresh(image)
+        return image
+
+    def get_image(self, image_id: UUID) -> ProduitImage:
+        image = self.db.get(ProduitImage, image_id)
+        if image is None:
+            raise LookupError("Product image not found")
+        return image
+
+    def update_image(self, image_id: UUID, payload: ProduitImageUpdate) -> ProduitImage:
+        image = self.get_image(image_id)
+
+        values = payload.model_dump(exclude_unset=True)
+        self._validate_image_target(
+            image.produit_id,
+            values.get("variante_id", image.variante_id),
+            values.get("couleur", image.couleur),
+        )
+
+        if values.get("est_principale") is True:
+            target_images = self.db.scalars(
+                select(ProduitImage).where(
+                    ProduitImage.produit_id == image.produit_id,
+                    ProduitImage.id != image.id,
+                    ProduitImage.variante_id == values.get("variante_id", image.variante_id),
+                    ProduitImage.couleur == values.get("couleur", image.couleur),
+                )
+            ).all()
+            for target_image in target_images:
+                target_image.est_principale = False
+
+        for key, value in values.items():
+            setattr(image, key, value)
+        self.db.commit()
+        self.db.refresh(image)
+        return image
+
+    def delete_image(self, image_id: UUID) -> None:
+        image = self.db.get(ProduitImage, image_id)
+        if image is None:
+            raise LookupError("Product image not found")
+        self.db.delete(image)
+        self.db.commit()
 
     def update_variante(self, variante_id: UUID, payload: VarianteWrite) -> Variante:
         variante = self.db.get(Variante, variante_id)
@@ -240,9 +317,32 @@ class AdminService:
                 selectinload(Produit.categorie),
                 selectinload(Produit.collections),
                 selectinload(Produit.variantes),
+                selectinload(Produit.images),
                 selectinload(Produit.promotions),
             )
         )
+
+    def _validate_image_target(
+        self,
+        produit_id: UUID,
+        variante_id: UUID | None,
+        couleur: str | None,
+    ) -> None:
+        if variante_id is not None and couleur is not None:
+            raise ValueError("An image cannot target both a variant and a color")
+        if variante_id is not None:
+            variant = self.db.get(Variante, variante_id)
+            if variant is None or variant.produit_id != produit_id:
+                raise LookupError("Variante not found for product")
+        if couleur is not None:
+            color_exists = self.db.scalar(
+                select(Variante.id).where(
+                    Variante.produit_id == produit_id,
+                    Variante.couleur == couleur,
+                )
+            )
+            if color_exists is None:
+                raise LookupError("Couleur not found for product")
 
     def _load_collections(self, collection_ids: list[UUID]) -> list[Collection]:
         if not collection_ids:

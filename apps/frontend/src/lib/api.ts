@@ -26,6 +26,17 @@ export type VarianteRead = {
   quantite_disponible: number;
 };
 
+export type ProduitImageRead = {
+  id: string;
+  produit_id: string;
+  variante_id: string | null;
+  couleur: string | null;
+  url: string;
+  alt_text: string | null;
+  ordre: number;
+  est_principale: boolean;
+};
+
 export type ProduitRead = {
   id: string;
   nom: string;
@@ -38,6 +49,7 @@ export type ProduitRead = {
   };
   collections: CollectionRead[];
   variantes: VarianteRead[];
+  images: ProduitImageRead[];
   promotions: PromotionRead[];
 };
 
@@ -198,6 +210,33 @@ async function requestJsonWithAuth<T>(
 
   if (init?.expectJson === false) {
     return undefined as T;
+  }
+
+  return (await response.json()) as T;
+}
+
+async function requestMultipartWithAuth<T>(path: string, accessToken: string, body: FormData): Promise<T> {
+  const response = await fetch(`${baseUrl}${path}`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body,
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    let detail = `Request failed for ${path}: ${response.status}`;
+    try {
+      const errorPayload = (await response.json()) as { detail?: string };
+      if (errorPayload.detail) {
+        detail = errorPayload.detail;
+      }
+    } catch {
+      // Keep the generic HTTP status message when the backend does not return JSON.
+    }
+    throw new ApiError(response.status, detail);
   }
 
   return (await response.json()) as T;
@@ -371,6 +410,11 @@ export type AdminPromotionWrite = {
 export type AdminVarianteWrite = { taille: string; couleur: string; quantite_disponible: number };
 export type AdminStockAdjustWrite = { quantite_disponible: number };
 export type AdminCommandeStatusUpdate = { statut: string };
+export type AdminImageUpdate = {
+  couleur?: string | null;
+  ordre?: number;
+  est_principale?: boolean;
+};
 
 export function fetchAdminProducts(accessToken: string) {
   return requestJsonWithAuth<ProduitRead[]>('/admin/produits', accessToken);
@@ -454,4 +498,33 @@ export function deleteAdminPromotion(accessToken: string, promotionId: string) {
 
 export function updateAdminOrderStatus(accessToken: string, orderId: string, payload: AdminCommandeStatusUpdate) {
   return requestJsonWithAuth<AdminCommandeRead>(`/admin/commandes/${orderId}/statut`, accessToken, { method: 'PATCH', body: payload });
+}
+
+export function uploadAdminProductImage(
+  accessToken: string,
+  productId: string,
+  file: File,
+  options: { couleur?: string; varianteId?: string; ordre?: number; estPrincipale?: boolean } = {},
+) {
+  const body = new FormData();
+  body.append("image", file);
+  if (options.couleur) body.append("couleur", options.couleur);
+  if (options.varianteId) body.append("variante_id", options.varianteId);
+  body.append("ordre", String(options.ordre ?? 0));
+  body.append("est_principale", String(options.estPrincipale ?? false));
+  return requestMultipartWithAuth<ProduitImageRead>(`/admin/produits/${productId}/images/upload`, accessToken, body);
+}
+
+export function updateAdminImage(accessToken: string, imageId: string, payload: AdminImageUpdate) {
+  return requestJsonWithAuth<ProduitImageRead>(`/admin/images/${imageId}`, accessToken, {
+    method: "PATCH",
+    body: payload,
+  });
+}
+
+export function deleteAdminImage(accessToken: string, imageId: string) {
+  return requestJsonWithAuth<void>(`/admin/images/${imageId}`, accessToken, {
+    method: "DELETE",
+    expectJson: false,
+  });
 }

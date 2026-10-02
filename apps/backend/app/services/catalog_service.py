@@ -49,6 +49,7 @@ class CatalogService:
                 selectinload(Produit.categorie),
                 selectinload(Produit.collections),
                 selectinload(Produit.variantes),
+                selectinload(Produit.images),
                 selectinload(Produit.promotions),
             )
             .order_by(Produit.nom.asc())
@@ -106,6 +107,7 @@ class CatalogService:
                 selectinload(Produit.categorie),
                 selectinload(Produit.collections),
                 selectinload(Produit.variantes),
+                selectinload(Produit.images),
                 selectinload(Produit.promotions),
             )
             .where(Produit.id == produit_id)

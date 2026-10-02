@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { FavoriteToggleButton } from "@/components/favorite-toggle-button";
 import { fetchProductById } from "@/lib/api";
 import { ProductPurchaseBox } from "./product-purchase-box";
+import { formatPrice, getProductColors, getProductImage, getProductPrice } from "@/lib/catalogue";
 
 type ProductPageProps = {
   params: Promise<{
@@ -16,6 +17,9 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
 
   try {
     const product = await fetchProductById(id);
+    const primaryImage = getProductImage(product);
+    const availableColors = getProductColors(product);
+    const availableSizes = Array.from(new Set(product.variantes.map((variant) => variant.taille)));
 
     return (
       <main className="mx-auto min-h-screen w-full max-w-[960px] px-4 py-4 sm:px-6 lg:px-8">
@@ -43,8 +47,15 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                   </span>
                 </div>
 
+                {primaryImage ? (
+                  <img
+                    src={primaryImage.url}
+                    alt={primaryImage.alt_text ?? product.nom}
+                    className="mb-5 aspect-[4/5] w-full rounded-2xl object-cover"
+                  />
+                ) : null}
                 <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-white/70">Live catalog</p>
+                  {!primaryImage ? <p className="text-xs uppercase tracking-[0.3em] text-white/70">Image à fournir</p> : null}
                   <h1 className="mt-2 font-display text-4xl font-bold leading-tight sm:text-5xl">{product.nom}</h1>
                   <p className="mt-3 max-w-[36ch] text-sm leading-6 text-white/80">{product.description}</p>
                 </div>
@@ -55,7 +66,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-sand">Price</p>
                 <div className="mt-2 flex items-end gap-3">
-                  <span className="font-display text-4xl font-bold text-white">{product.prix_promo ?? product.prix}</span>
+                  <span className="font-display text-4xl font-bold text-white">{formatPrice(getProductPrice(product))}</span>
                   {product.prix_promo ? <span className="pb-1 text-sm text-white/50 line-through">{product.prix}</span> : null}
                 </div>
               </div>
@@ -76,16 +87,11 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                 </div>
               </div>
 
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-sand">Variants</p>
-                <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                  {product.variantes.map((variant) => (
-                    <div key={variant.id} className="rounded-[18px] border border-white/10 bg-white/5 px-4 py-3">
-                      <p className="text-sm font-semibold text-white">{variant.taille} · {variant.couleur}</p>
-                      <p className="text-xs text-white/55">{variant.quantite_disponible} in stock</p>
-                    </div>
-                  ))}
-                </div>
+              <div className="rounded-[20px] border border-white/10 bg-white/5 px-4 py-3">
+                <p className="text-xs uppercase tracking-[0.3em] text-sand">Disponibilité</p>
+                <p className="mt-2 text-sm text-white/75">
+                  {availableColors.length} couleurs · {availableSizes.length} tailles disponibles
+                </p>
               </div>
 
               <ProductPurchaseBox product={product} />

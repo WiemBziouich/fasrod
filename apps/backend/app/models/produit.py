@@ -28,6 +28,7 @@ class Produit(Base):
 
     categorie: Mapped["Categorie"] = relationship(back_populates="produits")
     variantes: Mapped[list["Variante"]] = relationship(back_populates="produit", cascade="all, delete-orphan")
+    images: Mapped[list["ProduitImage"]] = relationship(back_populates="produit", cascade="all, delete-orphan")
     lignes_commandes: Mapped[list["LigneCommande"]] = relationship(back_populates="produit")
     favoris: Mapped[list["Favori"]] = relationship(back_populates="produit", cascade="all, delete-orphan")
     collections: Mapped[list["Collection"]] = relationship(

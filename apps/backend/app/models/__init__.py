@@ -9,6 +9,7 @@ from app.models.fiche_navex import FicheNavex
 from app.models.ligne_commande import LigneCommande
 from app.models.mouvement_stock import MouvementStock
 from app.models.produit import Produit
+from app.models.produit_image import ProduitImage
 from app.models.promotion import Promotion
 from app.models.variante import Variante
 from app.models.email_verification_token import EmailVerificationToken
