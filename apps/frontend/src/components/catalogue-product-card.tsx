@@ -1,63 +1,107 @@
 import Link from "next/link";
 
-import type { ProduitImageRead } from "@/lib/api";
+import type { ProduitImageRead, ProduitRead } from "@/lib/api";
 import type { CatalogueProduct } from "@/lib/catalogue";
-import { formatPrice } from "@/lib/catalogue";
+import {
+  formatPrice,
+  getProductColors,
+  getProductImage,
+  getProductPrice,
+} from "@/lib/catalogue";
+
+type CatalogueProductCardProps = {
+  product: CatalogueProduct | ProduitRead;
+  image?: ProduitImageRead;
+  productId?: string;
+  categoryLabel?: string;
+};
+
+function isApiProduct(
+  product: CatalogueProduct | ProduitRead,
+): product is ProduitRead {
+  return "id" in product && "images" in product && "variantes" in product;
+}
 
 export function CatalogueProductCard({
   product,
   image,
   productId,
-}: {
-  product: CatalogueProduct;
-  image?: ProduitImageRead;
-  productId?: string;
-}) {
+  categoryLabel,
+}: CatalogueProductCardProps) {
+  const apiProduct = isApiProduct(product) ? product : undefined;
+
+  const productName = apiProduct ? apiProduct.nom : product.name;
+
+  const productPrice = apiProduct
+    ? getProductPrice(apiProduct)
+    : product.price;
+
+  const productColors = apiProduct
+    ? getProductColors(apiProduct)
+    : product.colors;
+
+  const productImage = apiProduct
+    ? getProductImage(apiProduct)
+    : image;
+
+  const badge = categoryLabel
+    ? categoryLabel
+    : !apiProduct
+      ? product.kind === "baggy"
+        ? "Baggy"
+        : product.kind === "tshirt"
+          ? "T-shirt"
+          : "Set"
+      : "Produit";
+
   const card = (
-    <article className="overflow-hidden rounded-[22px] border border-border bg-surface-2 p-3">
-      <div className="flex aspect-[4/4.5] flex-col justify-between rounded-[18px] border border-border bg-surface p-3">
-        {image ? (
+    <article className="group overflow-hidden rounded-[22px] border border-border bg-surface-2 transition duration-200 hover:-translate-y-0.5 hover:border-text/30">
+      {/* IMAGE */}
+      <div className="relative aspect-[4/5] overflow-hidden bg-surface">
+        {productImage ? (
           <img
-            src={image.url}
-            alt={image.alt_text ?? product.name}
-            className="mb-3 aspect-[4/4.5] w-full rounded-lg object-cover"
+            src={productImage.url}
+            alt={productImage.alt_text ?? productName}
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
           />
-        ) : null}
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <div className="rounded-full border border-border px-3 py-1.5 text-[9px] font-medium uppercase tracking-[0.18em] text-muted">
+              Image à venir
+            </div>
+          </div>
+        )}
 
-        <div className="flex items-start justify-between gap-2">
-          <span className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-text">
-            {product.kind === "baggy"
-              ? "Baggy"
-              : product.kind === "tshirt"
-                ? "T-shirt"
-                : "Set"}
-          </span>
+        {/* CATEGORY */}
+        <span className="absolute left-3 top-3 rounded-full border border-border bg-surface/90 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-text backdrop-blur">
+          {badge}
+        </span>
+      </div>
 
-          {!image ? (
-            <span className="text-[10px] text-muted">Image à fournir</span>
-          ) : null}
-        </div>
-
-        <div>
-          <h2 className="text-xl font-bold leading-tight text-text">
-            {product.name}
+      {/* INFO */}
+      <div className="p-3">
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="min-w-0 text-sm font-bold leading-tight text-text">
+            {productName}
           </h2>
 
-          <p className="mt-1 text-base font-semibold text-text">
-            {formatPrice(product.price)}
+          <p className="shrink-0 text-sm font-semibold text-text">
+            {formatPrice(productPrice)}
           </p>
+        </div>
 
+        {productColors.length > 0 ? (
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {product.colors.map((color) => (
+            {productColors.map((color) => (
               <span
                 key={color}
-                className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted"
+                className="rounded-full border border-border px-2 py-0.5 text-[9px] text-muted"
               >
                 {color}
               </span>
             ))}
           </div>
-        </div>
+        ) : null}
       </div>
     </article>
   );
@@ -70,4 +114,3 @@ export function CatalogueProductCard({
     card
   );
 }
-

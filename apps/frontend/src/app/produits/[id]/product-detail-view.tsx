@@ -22,7 +22,9 @@ const INFO_ITEMS = [
 
 const LOW_STOCK_THRESHOLD = 5;
 
-export function ProductDetailView({ product }: ProductDetailViewProps) {
+export function ProductDetailView({
+  product,
+}: ProductDetailViewProps) {
   const router = useRouter();
   const { addItem } = useCart();
 
@@ -31,7 +33,14 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
   /* -------------------------------------------------------------------------- */
 
   const colors = useMemo(
-    () => Array.from(new Set(product.variantes.map((variant) => variant.couleur))),
+    () =>
+      Array.from(
+        new Set(
+          product.variantes.map(
+            (variant) => variant.couleur,
+          ),
+        ),
+      ),
     [product.variantes],
   );
 
@@ -39,13 +48,20 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
     () =>
       sortSizes(
         Array.from(
-          new Set(product.variantes.map((variant) => variant.taille)),
+          new Set(
+            product.variantes.map(
+              (variant) => variant.taille,
+            ),
+          ),
         ),
       ),
     [product.variantes],
   );
 
-  const isSizeInStock = (color: string, size: string) =>
+  const isSizeInStock = (
+    color: string,
+    size: string,
+  ) =>
     product.variantes.some(
       (variant) =>
         variant.couleur === color &&
@@ -53,76 +69,75 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
         variant.quantite_disponible > 0,
     );
 
-  const pickSize = (color: string, preferred?: string) => {
-    if (preferred && isSizeInStock(color, preferred)) {
+  const pickSize = (
+    color: string,
+    preferred?: string,
+  ) => {
+    if (
+      preferred &&
+      isSizeInStock(color, preferred)
+    ) {
       return preferred;
     }
 
     return (
-      sizes.find((size) => isSizeInStock(color, size)) ??
+      sizes.find((size) =>
+        isSizeInStock(color, size),
+      ) ??
       preferred ??
       sizes[0] ??
       ""
     );
   };
 
-  const [selectedColor, setSelectedColor] = useState(colors[0] ?? "");
-  const [selectedSize, setSelectedSize] = useState(() =>
-    pickSize(colors[0] ?? ""),
-  );
+  const [selectedColor, setSelectedColor] =
+    useState(colors[0] ?? "");
 
-  /*
-   * null = no manual thumbnail selected.
-   *
-   * When null, the gallery chooses automatically:
-   * color image -> main product image -> first image.
-   */
-  const [activeImageId, setActiveImageId] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] =
+    useState(() =>
+      pickSize(colors[0] ?? ""),
+    );
 
-  const [justAdded, setJustAdded] = useState(false);
+  const [activeImageId, setActiveImageId] =
+    useState<string | null>(null);
+
+  const [justAdded, setJustAdded] =
+    useState(false);
 
   /* -------------------------------------------------------------------------- */
   /*                                   IMAGES                                   */
   /* -------------------------------------------------------------------------- */
 
-  /*
-   * Use the images returned by the API directly.
-   *
-   * We deliberately do NOT depend on getProductImage/getProductImages here.
-   * This makes the detail page behavior predictable.
-   */
   const images = useMemo(() => {
-    if (!product.images || product.images.length === 0) {
+    if (
+      !product.images ||
+      product.images.length === 0
+    ) {
       return [];
     }
 
     return [...product.images].sort((a, b) => {
-      // Main image first.
-      if (a.est_principale && !b.est_principale) {
+      if (
+        a.est_principale &&
+        !b.est_principale
+      ) {
         return -1;
       }
 
-      if (!a.est_principale && b.est_principale) {
+      if (
+        !a.est_principale &&
+        b.est_principale
+      ) {
         return 1;
       }
 
-      // Then by explicit order.
-      return (a.ordre ?? 0) - (b.ordre ?? 0);
+      return (
+        (a.ordre ?? 0) -
+        (b.ordre ?? 0)
+      );
     });
   }, [product.images]);
 
-  /*
-   * Images belonging to the currently selected color.
-   *
-   * A color image has:
-   *   produit_id = product
-   *   variante_id = null
-   *   couleur = selectedColor
-   *
-   * Product-wide image:
-   *   couleur = null
-   *   variante_id = null
-   */
   const selectedColorImages = useMemo(() => {
     if (!selectedColor) {
       return [];
@@ -135,9 +150,6 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
     );
   }, [images, selectedColor]);
 
-  /*
-   * Product-wide images are valid fallback images for every color.
-   */
   const productWideImages = useMemo(
     () =>
       images.filter(
@@ -148,49 +160,44 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
     [images],
   );
 
-  /*
-   * Main product image.
-   *
-   * Priority:
-   * 1. selected color image
-   * 2. product-wide main image
-   * 3. product-wide first image
-   * 4. first available image
-   */
-  const automaticImage = useMemo(() => {
-    return (
+  const automaticImage = useMemo(
+    () =>
       selectedColorImages[0] ??
-      productWideImages.find((image) => image.est_principale) ??
+      productWideImages.find(
+        (image) => image.est_principale,
+      ) ??
       productWideImages[0] ??
-      images.find((image) => image.est_principale) ??
+      images.find(
+        (image) => image.est_principale,
+      ) ??
       images[0] ??
-      null
-    );
-  }, [
-    selectedColorImages,
-    productWideImages,
-    images,
-  ]);
+      null,
+    [
+      selectedColorImages,
+      productWideImages,
+      images,
+    ],
+  );
 
-  /*
-   * If the user manually clicked a thumbnail, use it.
-   * Otherwise use the automatic image.
-   */
   const activeImage =
-    images.find((image) => image.id === activeImageId) ??
-    automaticImage;
+    images.find(
+      (image) => image.id === activeImageId,
+    ) ?? automaticImage;
 
   /* -------------------------------------------------------------------------- */
   /*                              SELECTED VARIANT                              */
   /* -------------------------------------------------------------------------- */
 
-  const selectedVariant = product.variantes.find(
-    (variant) =>
-      variant.couleur === selectedColor &&
-      variant.taille === selectedSize,
-  );
+  const selectedVariant =
+    product.variantes.find(
+      (variant) =>
+        variant.couleur === selectedColor &&
+        variant.taille === selectedSize,
+    );
 
-  const stock = selectedVariant?.quantite_disponible ?? 0;
+  const stock =
+    selectedVariant?.quantite_disponible ?? 0;
+
   const isOutOfStock = stock <= 0;
 
   /* -------------------------------------------------------------------------- */
@@ -209,9 +216,6 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
     return () => clearTimeout(timeout);
   }, [justAdded]);
 
-  /*
-   * If the product data changes, make sure the selected color still exists.
-   */
   useEffect(() => {
     if (colors.length === 0) {
       setSelectedColor("");
@@ -237,10 +241,13 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
 
   const discount =
     oldPrice && oldPrice > price
-      ? Math.round((1 - price / oldPrice) * 100)
+      ? Math.round(
+          (1 - price / oldPrice) * 100,
+        )
       : null;
 
-  const collectionBadge = product.collections[0]?.nom;
+  const collectionBadge =
+    product.collections[0]?.nom;
 
   /* -------------------------------------------------------------------------- */
   /*                                  ACTIONS                                   */
@@ -257,22 +264,21 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
     }
   };
 
-  const handleColorChange = (color: string) => {
+  const handleColorChange = (
+    color: string,
+  ) => {
     setSelectedColor(color);
 
     setSelectedSize((current) =>
       pickSize(color, current),
     );
 
-    /*
-     * Clear manual thumbnail selection.
-     *
-     * This allows the new color image to become the main image.
-     */
     setActiveImageId(null);
   };
 
-  const handleImageClick = (imageId: string) => {
+  const handleImageClick = (
+    imageId: string,
+  ) => {
     setActiveImageId(imageId);
   };
 
@@ -288,6 +294,7 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
       taille: selectedVariant.taille,
       couleur: selectedVariant.couleur,
       prix: formatPrice(price),
+      image: activeImage?.url,
     });
 
     setJustAdded(true);
@@ -298,32 +305,40 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
   /* -------------------------------------------------------------------------- */
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-5xl px-4 pb-32 pt-4 sm:px-6 lg:px-8">
+    <main className="mx-auto min-h-screen w-full max-w-[1280px] px-4 pb-28 pt-4 sm:px-6 lg:px-8">
 
       {/* -------------------------------------------------------------------- */}
       {/* TOP BAR                                                              */}
       {/* -------------------------------------------------------------------- */}
 
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-4">
+
         <button
           type="button"
           onClick={handleBack}
-          className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-semibold text-text transition hover:bg-surface"
+          className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-xs font-semibold text-text transition hover:border-text hover:bg-surface-2"
         >
-          <span aria-hidden>←</span>
+          <span
+            aria-hidden
+            className="text-base leading-none"
+          >
+            ←
+          </span>
+
           Retour
         </button>
 
-        <span className="text-xs uppercase tracking-[0.3em] text-muted">
+        <span className="hidden text-[10px] uppercase tracking-[0.32em] text-muted sm:block">
           Détail du produit
         </span>
+
       </div>
 
       {/* -------------------------------------------------------------------- */}
       {/* PRODUCT                                                              */}
       {/* -------------------------------------------------------------------- */}
 
-      <section className="mt-5 grid gap-6 lg:grid-cols-2 lg:items-start lg:gap-10">
+      <section className="mt-5 grid gap-7 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-10">
 
         {/* ------------------------------------------------------------------ */}
         {/* GALLERY                                                            */}
@@ -333,135 +348,161 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
 
           {/* MAIN IMAGE */}
 
-          <div className="relative w-full overflow-hidden rounded-2xl bg-surface">
+          <div className="relative min-w-0 flex-1 overflow-hidden rounded-[24px] border border-border bg-surface">
 
             {activeImage ? (
-              <img
-                src={activeImage.url}
-                alt={
-                  activeImage.alt_text ??
-                  `${product.nom} ${selectedColor}`
-                }
-                className="aspect-[4/5] w-full object-cover"
-              />
+              <div className="flex max-h-[680px] min-h-[420px] items-center justify-center bg-surface sm:min-h-[520px] lg:max-h-[620px]">
+
+                <img
+                  src={activeImage.url}
+                  alt={
+                    activeImage.alt_text ??
+                    `${product.nom} ${selectedColor}`
+                  }
+                  className="h-full max-h-[620px] w-full object-contain"
+                />
+
+              </div>
             ) : (
-              <div className="flex aspect-[4/5] w-full items-center justify-center text-xs uppercase tracking-[0.3em] text-muted">
+              <div className="flex aspect-[4/5] min-h-[420px] w-full items-center justify-center text-[10px] uppercase tracking-[0.3em] text-muted">
                 Image à venir
               </div>
             )}
 
             {collectionBadge ? (
-              <span className="absolute left-3 top-3 rounded-full bg-bg/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-text backdrop-blur">
+              <span className="absolute left-4 top-4 rounded-full border border-white/20 bg-black/70 px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.18em] text-white backdrop-blur-md">
                 {collectionBadge}
               </span>
             ) : null}
+
           </div>
 
           {/* THUMBNAILS */}
 
           {images.length > 1 ? (
-            <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:max-h-[560px] lg:flex-col lg:overflow-x-hidden lg:overflow-y-auto">
+            <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:max-h-[620px] lg:w-[76px] lg:flex-col lg:overflow-x-hidden lg:overflow-y-auto lg:pb-0">
 
-              {images.map((image, index) => {
-                const isActive =
-                  image.id === activeImage?.id;
+              {images.map(
+                (image, index) => {
+                  const isActive =
+                    image.id ===
+                    activeImage?.id;
 
-                return (
-                  <button
-                    key={image.id}
-                    type="button"
-                    onClick={() =>
-                      handleImageClick(image.id)
-                    }
-                    aria-label={`Voir l'image ${index + 1}`}
-                    aria-current={isActive}
-                    className={`h-[4.5rem] w-14 shrink-0 overflow-hidden rounded-lg border-2 transition ${
-                      isActive
-                        ? "border-text"
-                        : "border-transparent opacity-60 hover:opacity-100"
-                    }`}
-                  >
-                    <img
-                      src={image.url}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      key={image.id}
+                      type="button"
+                      onClick={() =>
+                        handleImageClick(
+                          image.id,
+                        )
+                      }
+                      aria-label={`Voir l'image ${index + 1}`}
+                      aria-current={
+                        isActive
+                      }
+                      className={`h-[72px] w-[58px] shrink-0 overflow-hidden rounded-[14px] border bg-surface transition sm:h-[82px] sm:w-[66px] lg:h-[86px] lg:w-[70px] ${
+                        isActive
+                          ? "border-text opacity-100"
+                          : "border-border opacity-55 hover:opacity-100"
+                      }`}
+                    >
+                      <img
+                        src={image.url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    </button>
+                  );
+                },
+              )}
+
             </div>
           ) : null}
+
         </div>
 
         {/* ------------------------------------------------------------------ */}
         {/* PRODUCT INFO                                                       */}
         {/* ------------------------------------------------------------------ */}
 
-        <div className="space-y-5">
+        <div className="space-y-5 lg:sticky lg:top-6">
 
           {/* TITLE */}
 
           <div>
-            <p className="text-[11px] uppercase tracking-[0.25em] text-muted">
+
+            <p className="text-[10px] uppercase tracking-[0.28em] text-muted">
               {product.categorie.nom}
               {collectionBadge
                 ? ` · ${collectionBadge}`
                 : ""}
             </p>
 
-            <h1 className="mt-1.5 font-display text-2xl font-bold leading-tight sm:text-3xl">
+            <h1 className="mt-2 font-display text-3xl font-bold leading-[1.05] text-text sm:text-4xl">
               {product.nom}
             </h1>
+
           </div>
 
           {/* PRICE */}
 
           <div className="flex flex-wrap items-end gap-3">
-            <span className="font-display text-3xl font-bold">
+
+            <span className="font-display text-3xl font-bold text-text">
               {formatPrice(price)}
             </span>
 
-            {oldPrice && oldPrice > price ? (
+            {oldPrice &&
+            oldPrice > price ? (
               <span className="pb-1 text-sm text-muted line-through">
                 {formatPrice(oldPrice)}
               </span>
             ) : null}
 
             {discount ? (
-              <span className="mb-1 rounded-full bg-text px-2.5 py-0.5 text-xs font-bold text-bg">
+              <span className="mb-1 rounded-full bg-text px-2.5 py-1 text-[10px] font-bold text-bg">
                 -{discount}%
               </span>
             ) : null}
+
           </div>
 
           {/* PROMOTIONS */}
 
-          {product.promotions.length > 0 ? (
+          {product.promotions.length >
+          0 ? (
             <div className="space-y-2">
-              {product.promotions.map((promotion) => (
-                <div
-                  key={promotion.id}
-                  className="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text"
-                >
-                  <span className="font-semibold">
-                    {promotion.type} {promotion.valeur}
-                  </span>
 
-                  {promotion.description ? (
-                    <span className="text-muted">
-                      {" "}
-                      · {promotion.description}
+              {product.promotions.map(
+                (promotion) => (
+                  <div
+                    key={promotion.id}
+                    className="rounded-2xl border border-border bg-surface px-4 py-3 text-xs"
+                  >
+                    <span className="font-semibold text-text">
+                      {promotion.type}{" "}
+                      {promotion.valeur}
                     </span>
-                  ) : null}
-                </div>
-              ))}
+
+                    {promotion.description ? (
+                      <span className="text-muted">
+                        {" "}
+                        ·{" "}
+                        {promotion.description}
+                      </span>
+                    ) : null}
+                  </div>
+                ),
+              )}
+
             </div>
           ) : null}
 
           {/* DESCRIPTION */}
 
           {product.description ? (
-            <p className="text-[13px] leading-5 text-muted">
+            <p className="max-w-[52ch] text-[13px] leading-5 text-muted">
               {product.description}
             </p>
           ) : null}
@@ -472,56 +513,71 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
 
           {colors.length > 0 ? (
             <div>
-              <p className="text-[13px] font-semibold">
-                Couleur :{" "}
-                <span className="font-normal text-muted">
+
+              <div className="flex items-center justify-between">
+
+                <p className="text-xs font-semibold text-text">
+                  Couleur
+                </p>
+
+                <span className="text-xs text-muted">
                   {selectedColor}
                 </span>
-              </p>
 
-              <div className="mt-2.5 flex flex-wrap gap-2.5">
-                {colors.map((color) => {
-                  const isActive =
-                    color === selectedColor;
-
-                  /*
-                   * Check whether this color actually has an image.
-                   * This is only visual information; a color without
-                   * an image is still selectable.
-                   */
-                  const hasImage = images.some(
-                    (image) =>
-                      image.couleur === color &&
-                      !image.variante_id,
-                  );
-
-                  return (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() =>
-                        handleColorChange(color)
-                      }
-                      aria-label={color}
-                      aria-pressed={isActive}
-                      title={
-                        hasImage
-                          ? color
-                          : `${color} — image non disponible`
-                      }
-                      style={{
-                        backgroundColor:
-                          getColorHex(color),
-                      }}
-                      className={`h-8 w-8 rounded-full border border-white/20 transition ${
-                        isActive
-                          ? "ring-2 ring-text ring-offset-2 ring-offset-bg"
-                          : "hover:scale-105"
-                      }`}
-                    />
-                  );
-                })}
               </div>
+
+              <div className="mt-3 flex flex-wrap gap-3">
+
+                {colors.map(
+                  (color) => {
+                    const isActive =
+                      color ===
+                      selectedColor;
+
+                    const hasImage =
+                      images.some(
+                        (image) =>
+                          image.couleur ===
+                            color &&
+                          !image.variante_id,
+                      );
+
+                    return (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() =>
+                          handleColorChange(
+                            color,
+                          )
+                        }
+                        aria-label={color}
+                        aria-pressed={
+                          isActive
+                        }
+                        title={
+                          hasImage
+                            ? color
+                            : `${color} — image non disponible`
+                        }
+                        style={{
+                          backgroundColor:
+                            getColorHex(
+                              color,
+                            ),
+                        }}
+                        className={`h-9 w-9 rounded-full border border-white/20 transition ${
+                          isActive
+                            ? "ring-2 ring-text ring-offset-2 ring-offset-bg"
+                            : "hover:scale-105"
+                        }`}
+                      />
+                    );
+                  },
+                )}
+
+              </div>
+
             </div>
           ) : null}
 
@@ -531,14 +587,21 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
 
           {sizes.length > 0 ? (
             <div>
-              <p className="text-[13px] font-semibold">
-                Taille :{" "}
-                <span className="font-normal text-muted">
+
+              <div className="flex items-center justify-between">
+
+                <p className="text-xs font-semibold text-text">
+                  Taille
+                </p>
+
+                <span className="text-xs text-muted">
                   {selectedSize}
                 </span>
-              </p>
 
-              <div className="mt-2.5 flex flex-wrap gap-2">
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+
                 {sizes.map((size) => {
                   const available =
                     isSizeInStock(
@@ -555,14 +618,18 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
                       type="button"
                       disabled={!available}
                       onClick={() =>
-                        setSelectedSize(size)
+                        setSelectedSize(
+                          size,
+                        )
                       }
-                      aria-pressed={isActive}
-                      className={`min-w-[2.75rem] rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition ${
+                      aria-pressed={
+                        isActive
+                      }
+                      className={`min-w-[48px] rounded-full border px-3.5 py-2 text-xs font-semibold transition ${
                         isActive
                           ? "border-text bg-text text-bg"
                           : available
-                            ? "border-border text-text hover:border-text"
+                            ? "border-border bg-surface text-text hover:border-text"
                             : "cursor-not-allowed border-border text-muted line-through opacity-40"
                       }`}
                     >
@@ -570,14 +637,17 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
                     </button>
                   );
                 })}
+
               </div>
 
               {!isOutOfStock &&
-              stock <= LOW_STOCK_THRESHOLD ? (
-                <p className="mt-3 text-sm font-semibold text-text">
+              stock <=
+                LOW_STOCK_THRESHOLD ? (
+                <p className="mt-3 text-xs font-semibold text-text">
                   Plus que {stock} en stock
                 </p>
               ) : null}
+
             </div>
           ) : null}
 
@@ -585,16 +655,21 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
           {/* CTA                                                               */}
           {/* ---------------------------------------------------------------- */}
 
-          <div className="flex items-center gap-3">
+          <div className="flex gap-2.5 pt-1">
+
             <button
               type="button"
               disabled={
-                isOutOfStock || !selectedVariant
+                isOutOfStock ||
+                !selectedVariant
               }
-              onClick={handleAddToCart}
-              className="h-11 flex-1 rounded-full bg-text px-6 text-sm font-bold text-bg transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={
+                handleAddToCart
+              }
+              className="h-12 flex-1 rounded-full bg-text px-6 text-sm font-bold text-bg transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {isOutOfStock || !selectedVariant
+              {isOutOfStock ||
+              !selectedVariant
                 ? "Rupture de stock"
                 : justAdded
                   ? "Ajouté ✓"
@@ -603,8 +678,9 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
 
             <FavoriteToggleButton
               productId={product.id}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-base text-text transition hover:border-text"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-base text-text transition hover:border-text hover:bg-surface-2"
             />
+
           </div>
 
           <p
@@ -617,28 +693,38 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
           </p>
 
           {/* ---------------------------------------------------------------- */}
-          {/* INFO                                                               */}
+          {/* INFO                                                              */}
           {/* ---------------------------------------------------------------- */}
 
-          <ul className="grid grid-cols-3 gap-3 rounded-xl border border-border bg-surface p-3.5">
-            {INFO_ITEMS.map((item) => (
-              <li
-                key={item.title}
-                className="flex flex-col items-start gap-1.5 text-xs"
-              >
-                <InfoIcon name={item.icon} />
+          <ul className="grid grid-cols-3 overflow-hidden rounded-[20px] border border-border bg-surface">
 
-                <span className="font-semibold text-text">
-                  {item.title}
-                </span>
+            {INFO_ITEMS.map(
+              (item) => (
+                <li
+                  key={item.title}
+                  className="min-w-0 border-r border-border p-3.5 last:border-r-0 sm:p-4"
+                >
 
-                <span className="text-muted">
-                  {item.text}
-                </span>
-              </li>
-            ))}
+                  <InfoIcon
+                    name={item.icon}
+                  />
+
+                  <p className="mt-2 text-[11px] font-semibold text-text">
+                    {item.title}
+                  </p>
+
+                  <p className="mt-1 text-[10px] leading-4 text-muted">
+                    {item.text}
+                  </p>
+
+                </li>
+              ),
+            )}
+
           </ul>
+
         </div>
+
       </section>
     </main>
   );
@@ -669,8 +755,17 @@ function InfoIcon({
           d="M3 6h11v10H3zM14 9h4l3 3v4h-7"
         />
 
-        <circle cx="7" cy="17.5" r="1.7" />
-        <circle cx="17" cy="17.5" r="1.7" />
+        <circle
+          cx="7"
+          cy="17.5"
+          r="1.7"
+        />
+
+        <circle
+          cx="17"
+          cy="17.5"
+          r="1.7"
+        />
       </svg>
     );
   }
@@ -713,4 +808,3 @@ function InfoIcon({
     </svg>
   );
 }
-
