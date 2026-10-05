@@ -142,11 +142,13 @@ export default function AdminPage() {
       return;
     }
 
+    const token = accessToken;
+
     let active = true;
 
     async function loadDashboard() {
       try {
-        const products = await fetchAdminProducts(accessToken);
+        const products = await fetchAdminProducts(token);
 
         if (!active) {
           return;
@@ -156,10 +158,10 @@ export default function AdminPage() {
         setError(null);
 
         const [orders, categories, collections, promotions] = await Promise.all([
-          fetchAdminOrders(accessToken),
-          fetchAdminCategories(accessToken),
-          fetchAdminCollections(accessToken),
-          fetchAdminPromotions(accessToken),
+          fetchAdminOrders(token),
+          fetchAdminCategories(token),
+          fetchAdminCollections(token),
+          fetchAdminPromotions(token),
         ]);
 
         if (!active) {
