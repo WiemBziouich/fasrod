@@ -52,6 +52,8 @@ export default function MesCommandesPage() {
       return;
     }
 
+    const token = accessToken;
+
     let active = true;
 
     async function loadOrders() {
@@ -59,12 +61,12 @@ export default function MesCommandesPage() {
       setError(null);
 
       try {
-        const commandList = await fetchMesCommandes(accessToken);
+        const commandList = await fetchMesCommandes(token);
 
         const commandDetails: CommandeDetailRead[] =
           await Promise.all(
             commandList.map((order) =>
-              fetchCommandeById(order.id, accessToken),
+              fetchCommandeById(order.id, token),
             ),
           );
 
