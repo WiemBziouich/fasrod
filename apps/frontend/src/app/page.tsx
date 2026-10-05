@@ -196,58 +196,6 @@ export default function HomePage() {
         !getCatalogueProduct(product.nom),
     );
 
-  const displayedCollections =
-    data.collections.length > 0
-      ? data.collections
-      : [
-          {
-            id: "1",
-            nom: "New Drop",
-            tag_style: null,
-          },
-          {
-            id: "2",
-            nom: "Streetwear",
-            tag_style: null,
-          },
-          {
-            id: "3",
-            nom: "Y2K",
-            tag_style: null,
-          },
-          {
-            id: "4",
-            nom: "Basketball",
-            tag_style: null,
-          },
-        ];
-
-  const collectionCards =
-    data.collections.length > 0
-      ? data.collections.slice(0, 4)
-      : [
-          {
-            id: "1",
-            nom: "Core Monochrome",
-            tag_style: null,
-          },
-          {
-            id: "2",
-            nom: "Summer Uniform",
-            tag_style: null,
-          },
-          {
-            id: "3",
-            nom: "Loose Form",
-            tag_style: null,
-          },
-          {
-            id: "4",
-            nom: "Y2K Energy",
-            tag_style: null,
-          },
-        ];
-
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col px-4 pb-24 pt-3 sm:px-6 md:pb-10 lg:px-8">
 
@@ -349,8 +297,14 @@ export default function HomePage() {
 
       <section className="mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 
-        {displayedCollections.map(
-          (collection) => (
+        {isLoading ? (
+          <>
+            <div className="h-9 w-24 shrink-0 animate-pulse rounded-full bg-surface2" />
+            <div className="h-9 w-28 shrink-0 animate-pulse rounded-full bg-surface2" />
+            <div className="h-9 w-20 shrink-0 animate-pulse rounded-full bg-surface2" />
+          </>
+        ) : (
+          data.collections.slice(0, 4).map((collection) => (
             <Link
               key={collection.id}
               href="/catalogue"
@@ -358,7 +312,7 @@ export default function HomePage() {
             >
               {collection.nom}
             </Link>
-          ),
+          ))
         )}
 
       </section>
@@ -524,7 +478,7 @@ export default function HomePage() {
 
         <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
 
-          {collectionCards.map(
+          {data.collections.slice(0, 4).map(
             (collection, index) => (
 
               <Link
