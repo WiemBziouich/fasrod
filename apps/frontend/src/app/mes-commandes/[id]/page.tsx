@@ -43,13 +43,15 @@ export default function MesCommandeDetailPage({ params }: OrderDetailPageProps) 
       return;
     }
 
+    const token = accessToken;
+
     let active = true;
 
     async function loadOrder() {
       const { id } = await params;
 
       try {
-        const detail = await fetchCommandeById(id, accessToken);
+        const detail = await fetchCommandeById(id, token);
         if (active) {
           setOrder(detail);
         }
